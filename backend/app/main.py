@@ -19,9 +19,10 @@ app.add_middleware(
 )
 
 # API 라우터 등록
-from app.api import logs, process
+from app.api import logs, process, stats
 app.include_router(logs.router)
 app.include_router(process.router)
+app.include_router(stats.router)
 
 @app.get("/")
 async def root():
