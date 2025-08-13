@@ -18,6 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# API 라우터 등록
+from app.api import logs
+app.include_router(logs.router)
+
 @app.get("/")
 async def root():
     return {"message": "Tinyproxy Monitor API", "status": "running"}
