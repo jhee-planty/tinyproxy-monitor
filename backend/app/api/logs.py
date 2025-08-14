@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/logs", tags=["logs"])
 # 환경변수에서 로그 파일 경로 가져오기
 TINYPROXY_LOG_PATH = os.getenv(
     "TINYPROXY_LOG_PATH", 
-    "/Users/jhee/Documents/workspace/tinyproxy/test.log"
+    "/var/log/tinyproxy/tinyproxy.log"
 )
 
 # 로그 레벨 패턴
