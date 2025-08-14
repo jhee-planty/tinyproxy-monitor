@@ -1,0 +1,417 @@
+.logs {
+  padding: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 헤더 */
+.logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.logs-header h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 28px;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* 연결 상태 */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-connected {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-connected .status-dot {
+  background: #10b981;
+}
+
+.status-reconnecting {
+  background: #fed7aa;
+  color: #92400e;
+}
+
+.status-reconnecting .status-dot {
+  background: #f97316;
+  animation: pulse 1s infinite;
+}
+
+.status-disconnected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-disconnected .status-dot {
+  background: #ef4444;
+  animation: none;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 1;
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+    opacity: 0.7;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    opacity: 1;
+  }
+}
+
+/* 컨트롤 버튼 */
+.control-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+/* 로그 카운터 */
+.log-counter {
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* 배너 */
+.error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pause-banner {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 로그 컨테이너 */
+.logs-container {
+  flex: 1;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 300px;
+  position: relative;
+}
+
+/* 스크롤바 스타일링 */
+.logs-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.logs-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.logs-container::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.logs-container::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* 로그 없음 */
+.no-logs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: #9ca3af;
+}
+
+.no-logs p {
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+.no-logs-hint {
+  font-size: 14px;
+  color: #d1d5db;
+}
+
+/* 로그 리스트 */
+.logs-list {
+  padding: 15px;
+}
+
+/* 로그 엔트리 */
+.log-entry {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: background 0.2s;
+  word-break: break-word;
+}
+
+.log-entry:hover {
+  background: #f9fafb;
+}
+
+/* 타임스탬프 */
+.log-timestamp {
+  color: #6b7280;
+  margin-right: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 로그 레벨 */
+.log-level {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-right: 12px;
+  text-transform: uppercase;
+  font-size: 11px;
+  flex-shrink: 0;
+  min-width: 60px;
+  text-align: center;
+}
+
+.level-critical,
+.level-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.level-warning,
+.level-warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.level-notice,
+.level-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.level-connect,
+.level-debug {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* 로그 메시지 */
+.log-message {
+  flex: 1;
+  color: #1f2937;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 레벨별 로그 엔트리 배경 */
+.log-critical,
+.log-error {
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+}
+
+.log-warning,
+.log-warn {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+}
+
+.log-notice,
+.log-info {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.log-connect,
+.log-debug {
+  background: #f9fafb;
+  border-left: 3px solid #9ca3af;
+}
+
+/* 푸터 */
+.logs-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 15px;
+}
+
+.footer-info {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.auto-scroll-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.auto-scroll-indicator.inactive {
+  color: #9ca3af;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .logs {
+    padding: 15px;
+  }
+
+  .logs-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .control-buttons {
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .log-entry {
+    font-size: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .log-timestamp {
+    margin-bottom: 4px;
+  }
+
+  .log-level {
+    margin-bottom: 4px;
+  }
+}
