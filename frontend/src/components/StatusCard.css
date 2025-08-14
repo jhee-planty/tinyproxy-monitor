@@ -1,0 +1,132 @@
+.status-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: 100%;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.status-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.status-loading {
+  color: #6b7280;
+  padding: 20px;
+  text-align: center;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-running {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.status-running .status-dot {
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+.status-stopped {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-stopped .status-dot {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.status-row:last-child {
+  border-bottom: none;
+}
+
+.status-label {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-value {
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-output {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.status-output summary {
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  user-select: none;
+}
+
+.status-output summary:hover {
+  color: #3b82f6;
+}
+
+.status-output pre {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow-x: auto;
+  color: #374151;
+  font-family: 'Consolas', 'Monaco', monospace;
+}

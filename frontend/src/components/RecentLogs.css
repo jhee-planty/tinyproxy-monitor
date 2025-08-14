@@ -1,0 +1,166 @@
+.recent-logs-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+}
+
+.logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.logs-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.logs-count {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.logs-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.logs-empty {
+  color: #6b7280;
+  text-align: center;
+  padding: 40px;
+}
+
+.logs-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.log-entry {
+  padding: 12px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.2s;
+}
+
+.log-entry:hover {
+  background: #f9fafb;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.log-time {
+  color: #6b7280;
+  font-size: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.log-level {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.log-pid {
+  color: #9ca3af;
+  font-size: 11px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.log-message {
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.5;
+  font-family: 'Consolas', 'Monaco', monospace;
+  word-break: break-word;
+}
+
+/* 로그 레벨 색상 */
+.log-critical {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.log-error {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.log-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.log-notice {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.log-connect {
+  background: #d1fae5;
+  color: #064e3b;
+}
+
+.log-info {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.log-default {
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.logs-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.view-all-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.view-all-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* 스크롤바 스타일링 */
+.logs-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.logs-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.logs-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.logs-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
