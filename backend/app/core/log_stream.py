@@ -100,7 +100,7 @@ class LogStreamManager:
     async def connect(self, websocket):
         """
         WebSocket 연결 설정
-        단일 연결만 허용
+        단일 연결만 허용 (기존 연결은 종료)
         
         Parameters:
         - websocket: FastAPI WebSocket 객체
@@ -109,9 +109,16 @@ class LogStreamManager:
         - bool: 연결 성공 여부
         """
         async with self.connection_lock:
+            # 기존 연결이 있으면 종료
             if self.active_connection is not None:
-                return False
+                try:
+                    await self.active_connection.close()
+                except:
+                    pass  # 이미 닫혀있을 수 있음
+                self.active_connection = None
+                self.stop_monitoring()
             
+            # 새 연결 설정
             self.active_connection = websocket
             await websocket.accept()
             return True
@@ -141,10 +148,14 @@ class LogStreamManager:
     def stop_monitoring(self):
         """파일 모니터링 중지"""
         if self.observer is not None:
-            self.observer.stop()
-            self.observer.join()
-            self.observer = None
-            self.file_handler = None
+            try:
+                self.observer.stop()
+                self.observer.join(timeout=1)  # 1초 타임아웃 추가
+            except:
+                pass
+            finally:
+                self.observer = None
+                self.file_handler = None
     
     async def _on_file_changed(self):
         """파일 변경 시 호출되는 콜백"""

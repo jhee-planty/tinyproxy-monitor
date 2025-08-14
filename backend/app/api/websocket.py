@@ -119,10 +119,11 @@ async def websocket_endpoint(
     }
     """
     
-    # 단일 연결 체크 및 연결 수락
+    # 연결 수락 (기존 연결은 자동 종료)
     connected = await log_manager.connect(websocket)
     if not connected:
-        await websocket.close(code=1008, reason="Another client is already connected")
+        # 이 경우는 발생하지 않아야 함 (자동 처리됨)
+        await websocket.close(code=1011, reason="Unexpected error")
         return
     
     try:

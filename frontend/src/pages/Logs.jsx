@@ -298,10 +298,12 @@ const Logs = () => {
       }
     }, 30000)
     
+    // cleanup 함수 - 컴포넌트 언마운트 시 호출
     return () => {
+      console.log('Logs component unmounting, cleaning up...')
       disconnectWebSocket()
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
   // 필터 변경 시 로그 재필터링
   useEffect(() => {
