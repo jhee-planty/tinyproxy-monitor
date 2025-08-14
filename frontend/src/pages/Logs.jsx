@@ -46,19 +46,25 @@ const Logs = () => {
     try {
       const message = JSON.parse(event.data)
       
-      if (message.type === 'log' && !isPaused) {
-        const newLog = {
-          ...message.data,
-          id: `${Date.now()}-${Math.random()}` // 고유 ID 생성
-        }
+      // 백엔드에서 오는 메시지 타입 처리
+      if (message.type === 'realtime' && !isPaused) {
+        // realtime 메시지는 logs 배열을 포함
+        const newLogs = message.logs || []
         
-        setLogs(prevLogs => {
-          // 최대 로그 수 제한
-          const updatedLogs = [...prevLogs, newLog]
-          if (updatedLogs.length > MAX_LOGS) {
-            return updatedLogs.slice(-MAX_LOGS)
+        newLogs.forEach(log => {
+          const logWithId = {
+            ...log,
+            id: `${Date.now()}-${Math.random()}` // 각 로그에 고유 ID 추가
           }
-          return updatedLogs
+          
+          setLogs(prevLogs => {
+            // 최대 로그 수 제한
+            const updatedLogs = [...prevLogs, logWithId]
+            if (updatedLogs.length > MAX_LOGS) {
+              return updatedLogs.slice(-MAX_LOGS)
+            }
+            return updatedLogs
+          })
         })
         
         // 자동 스크롤
@@ -74,9 +80,9 @@ const Logs = () => {
         console.error('WebSocket error message:', message.error)
         setError(message.error)
       } else if (message.type === 'ping') {
-        // 서버 ping에 pong 응답
+        // 서버 ping에 pong 응답 (백엔드 프로토콜에 맞게)
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: 'pong' }))
+          wsRef.current.send(JSON.stringify({ action: 'ping' }))
         }
       }
     } catch (err) {
@@ -99,7 +105,7 @@ const Logs = () => {
       }
 
       // 새 WebSocket 연결
-      const ws = new WebSocket(`${WS_URL}/ws/logs`)
+      const ws = new WebSocket(`${WS_URL}/api/ws/logs`)
       wsRef.current = ws
 
       ws.onopen = () => {
@@ -109,13 +115,11 @@ const Logs = () => {
         setError(null)
         setConnectionAttempts(0)
         
-        // 초기 설정 전송
+        // 초기 설정 전송 (백엔드 프로토콜에 맞게)
         ws.send(JSON.stringify({
-          type: 'subscribe',
-          filters: {
-            level: null,
-            search: null
-          }
+          action: 'subscribe',
+          level: 'INFO',
+          search: null
         }))
       }
 
@@ -207,7 +211,7 @@ const Logs = () => {
     // Heartbeat 설정 (30초마다)
     reconnectIntervalRef.current = setInterval(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'ping' }))
+        wsRef.current.send(JSON.stringify({ action: 'ping' }))
       }
     }, 30000)
     
