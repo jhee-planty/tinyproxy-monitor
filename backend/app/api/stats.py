@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/stats", tags=["stats"])
 # 환경변수에서 통계 호스트 정보 가져오기
 TINYPROXY_STATS_HOST = os.getenv(
     "TINYPROXY_STATS_HOST",
-    "localhost:8888"
+    "localhost:3128"
 )
 
 # 기본 통계 호스트명 (tinyproxy 설정의 StatHost)
