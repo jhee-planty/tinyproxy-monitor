@@ -85,6 +85,27 @@ def paginate_logs(logs: List[Dict], page: int = 1, batch_size: int = 100) -> Dic
         "logs": logs[start_idx:end_idx] if total_logs > 0 else []
     }
 
+async def safe_send_json(websocket: WebSocket, data: dict) -> bool:
+    """
+    WebSocket으로 안전하게 JSON 전송
+    
+    Parameters:
+    - websocket: WebSocket 연결
+    - data: 전송할 데이터
+    
+    Returns:
+    - bool: 전송 성공 여부
+    """
+    try:
+        await websocket.send_json(data)
+        return True
+    except (RuntimeError, ConnectionError, WebSocketDisconnect):
+        # 연결이 이미 닫혔거나 에러 발생
+        return False
+    except Exception as e:
+        print(f"Error sending WebSocket message: {e}")
+        return False
+
 @router.websocket("/ws/logs")
 async def websocket_endpoint(
     websocket: WebSocket,
@@ -126,6 +147,9 @@ async def websocket_endpoint(
         await websocket.close(code=1011, reason="Unexpected error")
         return
     
+    # 연결 상태 플래그
+    connection_active = True
+    
     try:
         # 초기 설정
         current_level = level.upper()
@@ -134,7 +158,7 @@ async def websocket_endpoint(
         is_subscribed = False
         
         # 연결 성공 메시지
-        await websocket.send_json({
+        await safe_send_json(websocket, {
             "type": "info",
             "message": "Connected to log stream",
             "timestamp": datetime.now().isoformat(),
@@ -150,7 +174,7 @@ async def websocket_endpoint(
         log_manager.log_buffer.extend(parsed_logs)
         
         # 메시지 처리 루프
-        while True:
+        while connection_active:
             try:
                 # 클라이언트 메시지 수신 (타임아웃 설정)
                 message = await asyncio.wait_for(
@@ -168,11 +192,12 @@ async def websocket_endpoint(
                         is_subscribed = True
                         
                         # 구독 시작 응답
-                        await websocket.send_json({
+                        if not await safe_send_json(websocket, {
                             "type": "info",
                             "message": "Subscribed to real-time logs",
                             "timestamp": datetime.now().isoformat()
-                        })
+                        }):
+                            break
                         
                         # 실시간 로그 전송 태스크 시작
                         asyncio.create_task(
@@ -191,11 +216,12 @@ async def websocket_endpoint(
                         log_manager.stop_monitoring()
                         is_subscribed = False
                         
-                        await websocket.send_json({
+                        if not await safe_send_json(websocket, {
                             "type": "info",
                             "message": "Unsubscribed from real-time logs",
                             "timestamp": datetime.now().isoformat()
-                        })
+                        }):
+                            break
                 
                 elif action == "get_page":
                     # 특정 페이지 요청
@@ -213,11 +239,12 @@ async def websocket_endpoint(
                     page_data = paginate_logs(filtered_logs, page, current_batch_size)
                     
                     # 응답 전송
-                    await websocket.send_json({
+                    if not await safe_send_json(websocket, {
                         "type": "data",
                         **page_data,
                         "timestamp": datetime.now().isoformat()
-                    })
+                    }):
+                        break
                 
                 elif action == "update_filter":
                     # 필터 업데이트
@@ -225,68 +252,87 @@ async def websocket_endpoint(
                     current_search = data.get("search", current_search)
                     current_batch_size = data.get("batch_size", current_batch_size)
                     
-                    await websocket.send_json({
+                    if not await safe_send_json(websocket, {
                         "type": "info",
                         "message": "Filter updated",
                         "level": current_level,
                         "search": current_search,
                         "batch_size": current_batch_size,
                         "timestamp": datetime.now().isoformat()
-                    })
+                    }):
+                        break
                 
                 elif action == "get_buffer_info":
                     # 버퍼 정보 요청
-                    await websocket.send_json({
+                    if not await safe_send_json(websocket, {
                         "type": "info",
                         "buffer_info": log_manager.get_buffer_info(),
                         "timestamp": datetime.now().isoformat()
-                    })
+                    }):
+                        break
                 
                 elif action == "ping":
                     # 연결 유지용 ping
-                    await websocket.send_json({
+                    if not await safe_send_json(websocket, {
                         "type": "pong",
                         "timestamp": datetime.now().isoformat()
-                    })
+                    }):
+                        break
                 
                 else:
                     # 알 수 없는 액션
-                    await websocket.send_json({
+                    if not await safe_send_json(websocket, {
                         "type": "error",
                         "message": f"Unknown action: {action}",
                         "timestamp": datetime.now().isoformat()
-                    })
+                    }):
+                        break
             
             except asyncio.TimeoutError:
                 # 타임아웃 시 ping 전송
-                try:
-                    await websocket.send_json({
-                        "type": "ping",
-                        "timestamp": datetime.now().isoformat()
-                    })
-                except:
+                if not await safe_send_json(websocket, {
+                    "type": "ping",
+                    "timestamp": datetime.now().isoformat()
+                }):
                     break
             
             except json.JSONDecodeError:
-                await websocket.send_json({
+                if not await safe_send_json(websocket, {
                     "type": "error",
                     "message": "Invalid JSON format",
                     "timestamp": datetime.now().isoformat()
-                })
+                }):
+                    break
+            
+            except WebSocketDisconnect:
+                # 클라이언트가 연결을 끊음
+                connection_active = False
+                break
             
             except Exception as e:
-                await websocket.send_json({
+                print(f"Error in WebSocket message processing: {e}")
+                if not await safe_send_json(websocket, {
                     "type": "error",
                     "message": str(e),
                     "timestamp": datetime.now().isoformat()
-                })
+                }):
+                    break
     
     except WebSocketDisconnect:
+        # 정상적인 연결 종료
         pass
+    
+    except Exception as e:
+        # 예기치 않은 에러
+        print(f"WebSocket endpoint error: {e}")
     
     finally:
         # 연결 해제
-        await log_manager.disconnect()
+        connection_active = False
+        try:
+            await log_manager.disconnect()
+        except:
+            pass
 
 async def send_realtime_logs(
     websocket: WebSocket,
@@ -312,6 +358,10 @@ async def send_realtime_logs(
             # 0.5초 대기
             await asyncio.sleep(0.5)
             
+            # 연결 상태 확인
+            if log_manager.active_connection != websocket:
+                break
+            
             # 새로운 로그 확인
             current_buffer_size = len(log_manager.log_buffer)
             
@@ -336,11 +386,14 @@ async def send_realtime_logs(
                     for i in range(0, len(filtered_logs), batch_size):
                         batch = filtered_logs[i:i + batch_size]
                         
-                        await websocket.send_json({
+                        # 안전하게 전송
+                        if not await safe_send_json(websocket, {
                             "type": "realtime",
                             "logs": batch,
                             "timestamp": datetime.now().isoformat()
-                        })
+                        }):
+                            # 전송 실패 시 루프 종료
+                            return
                 
                 last_sent_index = current_buffer_size
         
