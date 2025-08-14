@@ -1,17 +1,11 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Optional
 from datetime import datetime
-import os
 import re
 from pathlib import Path
+from app.core.config import settings
 
 router = APIRouter(prefix="/api/logs", tags=["logs"])
-
-# 환경변수에서 로그 파일 경로 가져오기
-TINYPROXY_LOG_PATH = os.getenv(
-    "TINYPROXY_LOG_PATH", 
-    "/var/log/tinyproxy/tinyproxy.log"
-)
 
 # 로그 레벨 패턴
 LOG_PATTERN = re.compile(
@@ -71,11 +65,11 @@ async def get_log_tail(
     """
     
     # 로그 파일 존재 확인
-    log_path = Path(TINYPROXY_LOG_PATH)
+    log_path = Path(settings.TINYPROXY_LOG_PATH)
     if not log_path.exists():
         raise HTTPException(
             status_code=404, 
-            detail=f"Log file not found: {TINYPROXY_LOG_PATH}"
+            detail=f"Log file not found: {settings.TINYPROXY_LOG_PATH}"
         )
     
     try:
@@ -86,7 +80,7 @@ async def get_log_tail(
             file_size = f.tell()
             
             # 읽을 바이트 수 계산 (대략적인 추정)
-            bytes_to_read = min(file_size, lines * 200)  # 한 줄당 약 200바이트 가정
+            bytes_to_read = min(file_size, lines * settings.LOG_AVG_LINE_SIZE)
             
             # 파일 끝에서부터 읽기
             f.seek(max(0, file_size - bytes_to_read))

@@ -1,27 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Optional
-import os
 import httpx
 import re
 from bs4 import BeautifulSoup
 from datetime import datetime
+from app.core.config import settings
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
-
-# 환경변수에서 통계 호스트 정보 가져오기
-TINYPROXY_STATS_HOST = os.getenv(
-    "TINYPROXY_STATS_HOST",
-    "localhost:3128"
-)
-
-# 기본 통계 호스트명 (tinyproxy 설정의 StatHost)
-STATS_HOSTNAME = os.getenv(
-    "TINYPROXY_STATS_HOSTNAME", 
-    "tinyproxy.stats"
-)
-
-# HTTP 요청 타임아웃 (초)
-REQUEST_TIMEOUT = 5.0
 
 def parse_stats_html(html_content: str) -> Dict:
     """
@@ -130,17 +115,17 @@ async def fetch_stats_page() -> str:
     """
     
     # URL 구성 (http:// 스키마 확인)
-    if not TINYPROXY_STATS_HOST.startswith(('http://', 'https://')):
-        stats_url = f"http://{TINYPROXY_STATS_HOST}/"
+    if not settings.TINYPROXY_STATS_HOST.startswith(('http://', 'https://')):
+        stats_url = f"http://{settings.TINYPROXY_STATS_HOST}/"
     else:
-        stats_url = f"{TINYPROXY_STATS_HOST}/"
+        stats_url = f"{settings.TINYPROXY_STATS_HOST}/"
     
-    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=settings.HTTP_REQUEST_TIMEOUT) as client:
         try:
             # Host 헤더를 통계 호스트명으로 설정
             response = await client.get(
                 stats_url,
-                headers={"Host": STATS_HOSTNAME}
+                headers={"Host": settings.TINYPROXY_STATS_HOSTNAME}
             )
             response.raise_for_status()
             return response.text
@@ -248,24 +233,24 @@ async def check_stats_availability() -> Dict:
         
         return {
             "available": is_stats_page,
-            "stats_host": TINYPROXY_STATS_HOST,
-            "stats_hostname": STATS_HOSTNAME,
+            "stats_host": settings.TINYPROXY_STATS_HOST,
+            "stats_hostname": settings.TINYPROXY_STATS_HOSTNAME,
             "validated_at": datetime.now().isoformat()
         }
         
     except HTTPException as e:
         return {
             "available": False,
-            "stats_host": TINYPROXY_STATS_HOST,
-            "stats_hostname": STATS_HOSTNAME,
+            "stats_host": settings.TINYPROXY_STATS_HOST,
+            "stats_hostname": settings.TINYPROXY_STATS_HOSTNAME,
             "error": e.detail,
             "validated_at": datetime.now().isoformat()
         }
     except Exception as e:
         return {
             "available": False,
-            "stats_host": TINYPROXY_STATS_HOST,
-            "stats_hostname": STATS_HOSTNAME,
+            "stats_host": settings.TINYPROXY_STATS_HOST,
+            "stats_hostname": settings.TINYPROXY_STATS_HOSTNAME,
             "error": str(e),
             "validated_at": datetime.now().isoformat()
         }
