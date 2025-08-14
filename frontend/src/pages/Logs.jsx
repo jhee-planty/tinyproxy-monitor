@@ -1,36 +1,88 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import LogViewer from '../components/LogViewer'
+import LogFilters from '../components/LogFilters'
 import './Logs.css'
 
 const Logs = () => {
-  // 상태 관리
+  // 로그 데이터 상태
   const [logs, setLogs] = useState([])
+  const [filteredLogs, setFilteredLogs] = useState([])
+  
+  // 연결 상태
   const [isConnected, setIsConnected] = useState(false)
   const [isReconnecting, setIsReconnecting] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
-  const [error, setError] = useState(null)
   const [connectionAttempts, setConnectionAttempts] = useState(0)
+  
+  // UI 상태
+  const [isPaused, setIsPaused] = useState(false)
+  const [autoScroll, setAutoScroll] = useState(true)
+  const [error, setError] = useState(null)
+  
+  // 필터 상태
+  const [filters, setFilters] = useState({
+    level: 'INFO',
+    search: '',
+    realtime: true
+  })
   
   // WebSocket 및 타이머 refs
   const wsRef = useRef(null)
   const reconnectTimeoutRef = useRef(null)
-  const reconnectIntervalRef = useRef(null)
-  const logsContainerRef = useRef(null)
-  const autoScrollRef = useRef(true)
+  const heartbeatIntervalRef = useRef(null)
   
   // 설정
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
   const WS_URL = API_URL.replace('http://', 'ws://').replace('https://', 'wss://')
-  const MAX_LOGS = 1000 // 메모리 효율을 위한 최대 로그 수
+  const MAX_LOGS = 1000
   const MAX_RECONNECT_ATTEMPTS = 5
-  const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000] // 지수 백오프
-
+  const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]
+  
+  // 로그 레벨 우선순위 (낮을수록 중요)
+  const LOG_LEVEL_PRIORITY = {
+    'CRITICAL': 0,
+    'ERROR': 1,
+    'WARNING': 2,
+    'NOTICE': 3,
+    'CONNECT': 4,
+    'INFO': 5
+  }
+  
+  // 로그 필터링 함수
+  const filterLogs = useCallback((logsToFilter, currentFilters) => {
+    let filtered = [...logsToFilter]
+    
+    // 레벨 필터링
+    if (currentFilters.level) {
+      const minPriority = LOG_LEVEL_PRIORITY[currentFilters.level] || 5
+      filtered = filtered.filter(log => {
+        const logPriority = LOG_LEVEL_PRIORITY[log.level] || 5
+        return logPriority <= minPriority
+      })
+    }
+    
+    // 검색어 필터링
+    if (currentFilters.search) {
+      const searchLower = currentFilters.search.toLowerCase()
+      filtered = filtered.filter(log => 
+        log.message?.toLowerCase().includes(searchLower)
+      )
+    }
+    
+    return filtered
+  }, [])
+  
   // 초기 로그 로드
   const fetchInitialLogs = async () => {
     try {
       const response = await fetch(`${API_URL}/api/logs/tail?lines=100`)
       if (response.ok) {
         const data = await response.json()
-        setLogs(data.logs || [])
+        const logsWithIds = (data.logs || []).map((log, index) => ({
+          ...log,
+          id: `initial-${index}-${Date.now()}`
+        }))
+        setLogs(logsWithIds)
+        setFilteredLogs(filterLogs(logsWithIds, filters))
         setError(null)
       } else {
         throw new Error('Failed to fetch initial logs')
@@ -40,74 +92,83 @@ const Logs = () => {
       setError('Failed to load initial logs')
     }
   }
-
+  
   // WebSocket 메시지 처리
   const handleWebSocketMessage = useCallback((event) => {
     try {
       const message = JSON.parse(event.data)
       
-      // 백엔드에서 오는 메시지 타입 처리
-      if (message.type === 'realtime' && !isPaused) {
-        // realtime 메시지는 logs 배열을 포함
-        const newLogs = message.logs || []
-        
-        newLogs.forEach(log => {
-          const logWithId = {
-            ...log,
-            id: `${Date.now()}-${Math.random()}` // 각 로그에 고유 ID 추가
-          }
-          
-          setLogs(prevLogs => {
-            // 최대 로그 수 제한
-            const updatedLogs = [...prevLogs, logWithId]
-            if (updatedLogs.length > MAX_LOGS) {
-              return updatedLogs.slice(-MAX_LOGS)
-            }
-            return updatedLogs
-          })
-        })
-        
-        // 자동 스크롤
-        if (autoScrollRef.current && logsContainerRef.current) {
-          setTimeout(() => {
-            logsContainerRef.current?.scrollTo({
-              top: logsContainerRef.current.scrollHeight,
-              behavior: 'smooth'
+      switch(message.type) {
+        case 'realtime':
+          if (!isPaused && filters.realtime) {
+            const newLogs = (message.logs || []).map((log, index) => ({
+              ...log,
+              id: `rt-${Date.now()}-${index}`
+            }))
+            
+            setLogs(prevLogs => {
+              const combined = [...prevLogs, ...newLogs]
+              const trimmed = combined.slice(-MAX_LOGS)
+              
+              // 필터링된 로그도 업데이트
+              setFilteredLogs(filterLogs(trimmed, filters))
+              
+              return trimmed
             })
-          }, 100)
-        }
-      } else if (message.type === 'error') {
-        console.error('WebSocket error message:', message.error)
-        setError(message.error)
-      } else if (message.type === 'ping') {
-        // 서버 ping에 pong 응답 (백엔드 프로토콜에 맞게)
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ action: 'ping' }))
-        }
+          }
+          break
+          
+        case 'data':
+          // 페이징 데이터 처리
+          if (message.logs) {
+            const dataLogs = message.logs.map((log, index) => ({
+              ...log,
+              id: `data-${Date.now()}-${index}`
+            }))
+            setLogs(dataLogs)
+            setFilteredLogs(filterLogs(dataLogs, filters))
+          }
+          break
+          
+        case 'info':
+          console.log('WebSocket info:', message.message)
+          break
+          
+        case 'error':
+          console.error('WebSocket error:', message.message || message.error)
+          setError(message.message || message.error)
+          break
+          
+        case 'ping':
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ action: 'ping' }))
+          }
+          break
+          
+        default:
+          console.log('Unknown message type:', message.type)
       }
     } catch (err) {
       console.error('Error parsing WebSocket message:', err)
     }
-  }, [isPaused])
-
+  }, [isPaused, filters, filterLogs])
+  
   // WebSocket 연결
   const connectWebSocket = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return // 이미 연결됨
+      return
     }
-
+    
     setIsReconnecting(true)
     
     try {
-      // 기존 연결 정리
       if (wsRef.current) {
         wsRef.current.close()
       }
-
-      // 새 WebSocket 연결
+      
       const ws = new WebSocket(`${WS_URL}/api/ws/logs`)
       wsRef.current = ws
-
+      
       ws.onopen = () => {
         console.log('WebSocket connected')
         setIsConnected(true)
@@ -115,27 +176,26 @@ const Logs = () => {
         setError(null)
         setConnectionAttempts(0)
         
-        // 초기 설정 전송 (백엔드 프로토콜에 맞게)
+        // 구독 시작 및 필터 설정
         ws.send(JSON.stringify({
           action: 'subscribe',
-          level: 'INFO',
-          search: null
+          level: filters.level,
+          search: filters.search
         }))
       }
-
+      
       ws.onmessage = handleWebSocketMessage
-
+      
       ws.onerror = (event) => {
         console.error('WebSocket error:', event)
         setError('WebSocket connection error')
       }
-
+      
       ws.onclose = (event) => {
         console.log('WebSocket disconnected:', event.code, event.reason)
         setIsConnected(false)
         wsRef.current = null
         
-        // 정상 종료가 아닌 경우 재연결 시도
         if (!event.wasClean && connectionAttempts < MAX_RECONNECT_ATTEMPTS) {
           const delay = RECONNECT_DELAYS[Math.min(connectionAttempts, RECONNECT_DELAYS.length - 1)]
           setConnectionAttempts(prev => prev + 1)
@@ -155,8 +215,8 @@ const Logs = () => {
       setError('Failed to establish WebSocket connection')
       setIsReconnecting(false)
     }
-  }, [WS_URL, handleWebSocketMessage, connectionAttempts])
-
+  }, [WS_URL, filters, handleWebSocketMessage, connectionAttempts])
+  
   // WebSocket 연결 해제
   const disconnectWebSocket = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -164,9 +224,9 @@ const Logs = () => {
       reconnectTimeoutRef.current = null
     }
     
-    if (reconnectIntervalRef.current) {
-      clearInterval(reconnectIntervalRef.current)
-      reconnectIntervalRef.current = null
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current)
+      heartbeatIntervalRef.current = null
     }
     
     if (wsRef.current) {
@@ -177,50 +237,77 @@ const Logs = () => {
     setIsConnected(false)
     setIsReconnecting(false)
   }, [])
-
+  
+  // 필터 변경 처리
+  const handleFilterChange = useCallback((newFilters) => {
+    setFilters(newFilters)
+    
+    // 로컬 필터링 적용
+    setFilteredLogs(filterLogs(logs, newFilters))
+    
+    // WebSocket에 필터 업데이트 전송
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        action: 'update_filter',
+        level: newFilters.level,
+        search: newFilters.search
+      }))
+      
+      // 실시간 모드 변경 처리
+      if (newFilters.realtime !== filters.realtime) {
+        if (newFilters.realtime) {
+          wsRef.current.send(JSON.stringify({ action: 'subscribe' }))
+        } else {
+          wsRef.current.send(JSON.stringify({ action: 'unsubscribe' }))
+        }
+      }
+    }
+  }, [logs, filters, filterLogs])
+  
   // 수동 재연결
   const handleReconnect = () => {
     setConnectionAttempts(0)
     connectWebSocket()
   }
-
+  
   // 일시정지/재개 토글
   const togglePause = () => {
     setIsPaused(prev => !prev)
   }
-
+  
   // 로그 지우기
   const clearLogs = () => {
     setLogs([])
+    setFilteredLogs([])
   }
-
-  // 자동 스크롤 감지
-  const handleScroll = () => {
-    if (!logsContainerRef.current) return
-    
-    const { scrollTop, scrollHeight, clientHeight } = logsContainerRef.current
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
-    autoScrollRef.current = isAtBottom
+  
+  // 자동 스크롤 토글
+  const toggleAutoScroll = () => {
+    setAutoScroll(prev => !prev)
   }
-
+  
   // 컴포넌트 마운트 시
   useEffect(() => {
     fetchInitialLogs()
     connectWebSocket()
     
-    // Heartbeat 설정 (30초마다)
-    reconnectIntervalRef.current = setInterval(() => {
+    // Heartbeat 설정
+    heartbeatIntervalRef.current = setInterval(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ action: 'ping' }))
       }
     }, 30000)
     
-    // cleanup
     return () => {
       disconnectWebSocket()
     }
-  }, []) // 의도적으로 빈 의존성 배열 사용
-
+  }, [])
+  
+  // 필터 변경 시 로그 재필터링
+  useEffect(() => {
+    setFilteredLogs(filterLogs(logs, filters))
+  }, [logs, filters, filterLogs])
+  
   // 연결 상태 표시
   const getConnectionStatus = () => {
     if (isConnected) {
@@ -231,21 +318,21 @@ const Logs = () => {
       return { text: 'Disconnected', className: 'status-disconnected' }
     }
   }
-
+  
   const connectionStatus = getConnectionStatus()
-
+  
   return (
-    <div className="logs">
+    <div className="logs-page">
       {/* 헤더 */}
       <div className="logs-header">
-        <h2>Real-time Logs</h2>
+        <h2>Log Viewer</h2>
         <div className="header-controls">
           {/* 연결 상태 */}
           <div className={`connection-status ${connectionStatus.className}`}>
             <span className="status-dot"></span>
             {connectionStatus.text}
           </div>
-
+          
           {/* 컨트롤 버튼들 */}
           <div className="control-buttons">
             {!isConnected && !isReconnecting && (
@@ -262,73 +349,52 @@ const Logs = () => {
               {isPaused ? '▶️ Resume' : '⏸️ Pause'}
             </button>
             
+            <button 
+              onClick={toggleAutoScroll}
+              className={`btn ${autoScroll ? 'btn-info' : 'btn-secondary'}`}
+            >
+              {autoScroll ? '📍 Auto-scroll ON' : '📌 Auto-scroll OFF'}
+            </button>
+            
             <button onClick={clearLogs} className="btn btn-secondary">
               🗑️ Clear
             </button>
           </div>
-
+          
           {/* 로그 카운터 */}
           <div className="log-counter">
-            {logs.length} logs {logs.length >= MAX_LOGS && `(max ${MAX_LOGS})`}
+            {filteredLogs.length} / {logs.length} logs
+            {logs.length >= MAX_LOGS && ` (max ${MAX_LOGS})`}
           </div>
         </div>
       </div>
-
+      
       {/* 에러 메시지 */}
       {error && (
         <div className="error-banner">
           ⚠️ {error}
         </div>
       )}
-
+      
       {/* 일시정지 알림 */}
       {isPaused && (
         <div className="pause-banner">
           ⏸️ Log streaming is paused. Click Resume to continue receiving logs.
         </div>
       )}
-
-      {/* 로그 컨테이너 */}
-      <div 
-        className="logs-container" 
-        ref={logsContainerRef}
-        onScroll={handleScroll}
-      >
-        {logs.length === 0 ? (
-          <div className="no-logs">
-            <p>No logs to display</p>
-            <p className="no-logs-hint">
-              {isConnected ? 'Waiting for new logs...' : 'Connect to start receiving logs'}
-            </p>
-          </div>
-        ) : (
-          <div className="logs-list">
-            {logs.map((log) => (
-              <div 
-                key={log.id || `${log.timestamp}-${Math.random()}`}
-                className={`log-entry log-${log.level?.toLowerCase() || 'info'}`}
-              >
-                <span className="log-timestamp">{log.timestamp}</span>
-                <span className={`log-level level-${log.level?.toLowerCase() || 'info'}`}>
-                  {log.level || 'INFO'}
-                </span>
-                <span className="log-message">{log.message}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 하단 정보 */}
-      <div className="logs-footer">
-        <div className="footer-info">
-          {autoScrollRef.current ? (
-            <span className="auto-scroll-indicator">📍 Auto-scrolling enabled</span>
-          ) : (
-            <span className="auto-scroll-indicator inactive">📌 Auto-scrolling disabled (scroll to bottom to enable)</span>
-          )}
-        </div>
-      </div>
+      
+      {/* 필터 컨트롤 */}
+      <LogFilters 
+        onFilterChange={handleFilterChange}
+        currentFilters={filters}
+        isConnected={isConnected}
+      />
+      
+      {/* 로그 뷰어 */}
+      <LogViewer 
+        logs={filteredLogs}
+        autoScroll={autoScroll}
+      />
     </div>
   )
 }

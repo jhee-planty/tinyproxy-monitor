@@ -1,0 +1,152 @@
+.log-viewer {
+  flex: 1;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 400px;
+  max-height: calc(100vh - 300px);
+}
+
+.log-viewer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #9ca3af;
+}
+
+.log-viewer-empty p {
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: #d1d5db;
+}
+
+.log-list {
+  padding: 12px;
+}
+
+.log-entry {
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 10px;
+  margin-bottom: 2px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  transition: background 0.1s;
+}
+
+.log-entry:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.log-time {
+  color: #6b7280;
+  margin-right: 10px;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.log-level {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  margin-right: 10px;
+  text-transform: uppercase;
+  font-size: 11px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.log-pid {
+  color: #9ca3af;
+  margin-right: 10px;
+  font-size: 12px;
+}
+
+.log-msg {
+  flex: 1;
+  color: #1f2937;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 로그 레벨 스타일 */
+.level-critical,
+.level-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.level-warning,
+.level-warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.level-notice,
+.level-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.level-connect,
+.level-debug {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* 로그 엔트리 배경 */
+.log-critical,
+.log-error {
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+}
+
+.log-warning,
+.log-warn {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+}
+
+.log-notice,
+.log-info {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.log-connect,
+.log-debug {
+  background: #f9fafb;
+  border-left: 3px solid #9ca3af;
+}
+
+/* 스크롤바 스타일 */
+.log-viewer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log-viewer::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.log-viewer::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.log-viewer::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}

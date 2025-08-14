@@ -1,4 +1,4 @@
-.logs {
+.logs-page {
   padding: 20px;
   max-width: 1600px;
   margin: 0 auto;
@@ -196,182 +196,14 @@
   gap: 8px;
 }
 
-/* 로그 컨테이너 */
-.logs-container {
-  flex: 1;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 300px;
-  position: relative;
+/* 추가 버튼 스타일 */
+.btn-info {
+  background: #3b82f6;
+  color: white;
 }
 
-/* 스크롤바 스타일링 */
-.logs-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.logs-container::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 4px;
-}
-
-.logs-container::-webkit-scrollbar-thumb {
-  background: #9ca3af;
-  border-radius: 4px;
-}
-
-.logs-container::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-
-/* 로그 없음 */
-.no-logs {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 300px;
-  color: #9ca3af;
-}
-
-.no-logs p {
-  margin: 5px 0;
-  font-size: 16px;
-}
-
-.no-logs-hint {
-  font-size: 14px;
-  color: #d1d5db;
-}
-
-/* 로그 리스트 */
-.logs-list {
-  padding: 15px;
-}
-
-/* 로그 엔트리 */
-.log-entry {
-  display: flex;
-  align-items: flex-start;
-  padding: 8px 12px;
-  margin-bottom: 4px;
-  border-radius: 4px;
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  transition: background 0.2s;
-  word-break: break-word;
-}
-
-.log-entry:hover {
-  background: #f9fafb;
-}
-
-/* 타임스탬프 */
-.log-timestamp {
-  color: #6b7280;
-  margin-right: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* 로그 레벨 */
-.log-level {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-  margin-right: 12px;
-  text-transform: uppercase;
-  font-size: 11px;
-  flex-shrink: 0;
-  min-width: 60px;
-  text-align: center;
-}
-
-.level-critical,
-.level-error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.level-warning,
-.level-warn {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.level-notice,
-.level-info {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.level-connect,
-.level-debug {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-/* 로그 메시지 */
-.log-message {
-  flex: 1;
-  color: #1f2937;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-/* 레벨별 로그 엔트리 배경 */
-.log-critical,
-.log-error {
-  background: #fef2f2;
-  border-left: 3px solid #ef4444;
-}
-
-.log-warning,
-.log-warn {
-  background: #fffbeb;
-  border-left: 3px solid #f59e0b;
-}
-
-.log-notice,
-.log-info {
-  background: #eff6ff;
-  border-left: 3px solid #3b82f6;
-}
-
-.log-connect,
-.log-debug {
-  background: #f9fafb;
-  border-left: 3px solid #9ca3af;
-}
-
-/* 푸터 */
-.logs-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid #e5e7eb;
-  margin-top: 15px;
-}
-
-.footer-info {
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.auto-scroll-indicator {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.auto-scroll-indicator.inactive {
-  color: #9ca3af;
+.btn-info:hover:not(:disabled) {
+  background: #2563eb;
 }
 
 /* 반응형 디자인 */
