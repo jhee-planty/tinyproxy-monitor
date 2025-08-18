@@ -1,35 +1,154 @@
+"""
+FastAPI 메인 애플리케이션 - 기존 구조 통합 버전
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
+from contextlib import asynccontextmanager
+import asyncio
+import sys
+from pathlib import Path
 
-# FastAPI 앱 생성
-app = FastAPI(title="Tinyproxy Monitor API", version="1.0.0")
+# Add the parent directory to sys.path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from app.api import logs, process, stats, websocket, system, performance
+from app.core.config import settings
+from app.core.system_metrics import system_collector
+from app.core.performance_analyzer import performance_analyzer
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """애플리케이션 생명주기 관리"""
+    # Startup
+    print(f"Starting application...")
+    print(f"Log path: {settings.TINYPROXY_LOG_PATH}")
+    print(f"PID path: {settings.TINYPROXY_PID_PATH}") 
+    print(f"Stats host: {settings.TINYPROXY_STATS_HOST}")
+    
+    # 백그라운드 태스크 설정
+    tasks = []
+    
+    # 1. 시스템 메트릭 수집 태스크
+    system_task = asyncio.create_task(
+        system_collector.start_collection(interval=1)
+    )
+    tasks.append(system_task)
+    
+    # 2. 성능 메트릭 수집 태스크
+    async def fetch_stats():
+        """통계 페이지에서 데이터 가져오기"""
+        from app.api.stats import get_stats
+        try:
+            return await get_stats()
+        except:
+            return None
+    
+    perf_task = asyncio.create_task(
+        performance_analyzer.start_collection(fetch_stats, interval=1)
+    )
+    tasks.append(perf_task)
+    
+    yield
+    
+    # Shutdown
+    system_collector.stop_collection()
+    performance_analyzer.stop_collection()
+    
+    for task in tasks:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+    print("Shutting down application...")
+
+
+app = FastAPI(
+    title="Tinyproxy Monitor",
+    description="Tinyproxy 및 시스템 모니터링 API", 
+    version="2.0.0",
+    lifespan=lifespan
+)
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# API 라우터 등록
-from app.api import logs, process, stats, websocket
-app.include_router(logs.router)
+# Include routers - 기존 라우터
 app.include_router(process.router)
 app.include_router(stats.router)
+app.include_router(logs.router)
 app.include_router(websocket.router)
+
+# Include routers - 새로운 라우터
+app.include_router(system.router)
+app.include_router(performance.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Tinyproxy Monitor API", "status": "running"}
+    """헬스체크 엔드포인트"""
+    return {
+        "status": "ok",
+        "service": "Tinyproxy Monitor API",
+        "version": "2.0.0",
+        "features": [
+            "System Metrics",
+            "Performance Monitoring", 
+            "Real-time WebSocket",
+            "Log Streaming",
+            "Process Management"
+        ]
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """상세 헬스체크"""
+    health_status = {
+        "status": "healthy",
+        "checks": {
+            "api": True,
+            "tinyproxy_stats": False,
+            "log_file": False,
+            "pid_file": False
+        }
+    }
+    
+    # Tinyproxy 통계 페이지 확인
+    try:
+        from app.api.stats import check_stats_availability
+        stats_check = await check_stats_availability()
+        health_status["checks"]["tinyproxy_stats"] = stats_check.get("available", False)
+    except:
+        pass
+    
+    # 로그 파일 확인
+    from pathlib import Path
+    if Path(settings.TINYPROXY_LOG_PATH).exists():
+        health_status["checks"]["log_file"] = True
+    
+    # PID 파일 확인
+    if Path(settings.TINYPROXY_PID_PATH).exists():
+        health_status["checks"]["pid_file"] = True
+    
+    # 전체 상태 결정
+    if not all(health_status["checks"].values()):
+        health_status["status"] = "degraded"
+    
+    return health_status
 
-@app.get("/config")
-async def get_config():
-    """현재 애플리케이션 설정 반환"""
-    return settings.get_all_settings()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )
