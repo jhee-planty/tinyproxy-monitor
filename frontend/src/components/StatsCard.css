@@ -8,10 +8,28 @@
   flex-direction: column;
 }
 
+/* 시스템 메트릭 카드 스타일 */
+.stats-card.system-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+/* 성능 메트릭 카드 스타일 */
+.stats-card.performance-card {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
 .stats-card h3 {
   margin: 0 0 20px 0;
   color: #1f2937;
   font-size: 18px;
+}
+
+.system-card h3,
+.performance-card h3 {
+  color: white;
+  opacity: 0.95;
 }
 
 .stats-loading {
@@ -30,6 +48,18 @@
   color: #1f2937;
   line-height: 1;
   margin-bottom: 8px;
+}
+
+.system-card .stats-number,
+.performance-card .stats-number {
+  color: white;
+}
+
+.stats-unit {
+  font-size: 18px;
+  font-weight: 400;
+  margin-left: 5px;
+  opacity: 0.8;
 }
 
 .stats-label {
@@ -80,5 +110,9 @@
 @media (max-width: 400px) {
   .stats-number {
     font-size: 28px;
+  }
+  
+  .stats-unit {
+    font-size: 14px;
   }
 }

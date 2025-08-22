@@ -1,7 +1,23 @@
 import React from 'react'
 import './StatsCard.css'
 
-const StatsCard = ({ title, stats, type }) => {
+const StatsCard = ({ title, stats, type, value, unit }) => {
+  // 새로운 간단한 메트릭 카드 (시스템, 성능 메트릭용)
+  if (type === 'system' || type === 'performance') {
+    return (
+      <div className={`stats-card ${type}-card`}>
+        <h3>{title}</h3>
+        <div className="stats-main">
+          <div className="stats-number">
+            {value || '0'}
+            {unit && <span className="stats-unit">{unit}</span>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 기존 Tinyproxy 통계 카드
   if (!stats) {
     return (
       <div className="stats-card">
@@ -17,17 +33,17 @@ const StatsCard = ({ title, stats, type }) => {
         return (
           <>
             <div className="stats-main">
-              <div className="stats-number">{stats.stats.opens}</div>
+              <div className="stats-number">{stats.stats?.opens || 0}</div>
               <div className="stats-label">Active Connections</div>
             </div>
             <div className="stats-secondary">
               <div className="stats-item">
                 <span className="item-label">Total:</span>
-                <span className="item-value">{stats.total_connections}</span>
+                <span className="item-value">{stats.total_connections || 0}</span>
               </div>
               <div className="stats-item">
                 <span className="item-label">Load:</span>
-                <span className="item-value">{stats.current_load_ratio}%</span>
+                <span className="item-value">{stats.current_load_ratio || 0}%</span>
               </div>
             </div>
           </>
@@ -37,15 +53,15 @@ const StatsCard = ({ title, stats, type }) => {
         return (
           <>
             <div className="stats-main">
-              <div className="stats-number">{stats.stats.requests.toLocaleString()}</div>
+              <div className="stats-number">{(stats.stats?.requests || 0).toLocaleString()}</div>
               <div className="stats-label">Total Requests</div>
             </div>
             <div className="stats-secondary">
               <div className="stats-item">
                 <span className="item-label">Avg/min:</span>
                 <span className="item-value">
-                  {stats.stats.started_at 
-                    ? Math.round(stats.stats.requests / 60)
+                  {stats.stats?.started_at 
+                    ? Math.round((stats.stats?.requests || 0) / 60)
                     : 'N/A'}
                 </span>
               </div>
@@ -61,22 +77,22 @@ const StatsCard = ({ title, stats, type }) => {
           <>
             <div className="stats-main">
               <div className={`stats-number ${errorClass}`}>
-                {stats.total_errors}
+                {stats.total_errors || 0}
               </div>
               <div className="stats-label">Total Errors</div>
             </div>
             <div className="stats-secondary">
               <div className="stats-item">
                 <span className="item-label">Bad:</span>
-                <span className="item-value">{stats.stats.bad_connections}</span>
+                <span className="item-value">{stats.stats?.bad_connections || 0}</span>
               </div>
               <div className="stats-item">
                 <span className="item-label">Denied:</span>
-                <span className="item-value">{stats.stats.denied}</span>
+                <span className="item-value">{stats.stats?.denied || 0}</span>
               </div>
               <div className="stats-item">
                 <span className="item-label">Refused:</span>
-                <span className="item-value">{stats.stats.refused}</span>
+                <span className="item-value">{stats.stats?.refused || 0}</span>
               </div>
               <div className="stats-item">
                 <span className="item-label">Error Rate:</span>
