@@ -16,6 +16,7 @@ const Login = ({ onLogin }) => {
     setLoading(true)
 
     console.log('Login attempt:', { username })
+    console.log('Current location:', window.location.href)
 
     try {
       // OAuth2 형식으로 전송
@@ -23,9 +24,12 @@ const Login = ({ onLogin }) => {
       formData.append('username', username)
       formData.append('password', password)
 
-      console.log('Sending request to:', `/api/auth/login`)
+      const loginUrl = `/api/auth/login`
+      console.log('Sending request to:', loginUrl)
+      console.log('Full URL:', window.location.origin + loginUrl)
+      console.log('Request body:', formData.toString())
       
-      const response = await fetch(`/api/auth/login`, {
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -34,6 +38,7 @@ const Login = ({ onLogin }) => {
       })
 
       console.log('Response status:', response.status)
+      console.log('Response headers:', response.headers)
       const data = await response.json()
       console.log('Response data:', data)
 

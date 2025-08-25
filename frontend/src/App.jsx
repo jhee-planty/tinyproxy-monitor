@@ -22,10 +22,16 @@ function App() {
     console.log('Checking auth status...')
     try {
       // 먼저 인증이 활성화되어 있는지 확인
-      console.log('Fetching:', `/api/auth/check-auth`)
-      const authCheckRes = await fetch(`/api/auth/check-auth`)
+      const checkAuthUrl = `/api/auth/check-auth`
+      console.log('Fetching:', checkAuthUrl)
+      console.log('Full URL:', window.location.origin + checkAuthUrl)
+      
+      const authCheckRes = await fetch(checkAuthUrl)
+      console.log('Auth check response status:', authCheckRes.status)
+      console.log('Auth check response headers:', authCheckRes.headers)
+      
       const authCheck = await authCheckRes.json()
-      console.log('Auth check response:', authCheck)
+      console.log('Auth check response data:', authCheck)
       
       if (!authCheck.auth_enabled) {
         // 인증이 비활성화된 경우 자동 로그인

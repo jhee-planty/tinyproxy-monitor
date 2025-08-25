@@ -26,6 +26,8 @@ async def lifespan(app: FastAPI):
     print(f"Log path: {settings.TINYPROXY_LOG_PATH}")
     print(f"PID path: {settings.TINYPROXY_PID_PATH}") 
     print(f"Stats host: {settings.TINYPROXY_STATS_HOST}")
+    print(f"Auth disabled: {settings.DISABLE_AUTH}")
+    print(f"Blocked users: {settings.BLOCKED_USERS}")
     
     # 백그라운드 태스크 설정
     tasks = []
@@ -73,6 +75,7 @@ app = FastAPI(
 )
 
 # CORS 설정
+print("[MAIN] Setting up CORS middleware")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 개발 환경용 - 프로덕션에서는 특정 도메인으로 제한
@@ -80,9 +83,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+print("[MAIN] CORS middleware configured - allowing all origins")
 
 # Include routers - 인증 라우터 (보호 없음)
 app.include_router(auth.router)
+print("[MAIN] Auth router included at /api/auth")
 
 # Include routers - 기존 라우터
 app.include_router(process.router)
@@ -97,6 +102,7 @@ app.include_router(performance.router)
 @app.get("/")
 async def root():
     """헬스체크 엔드포인트"""
+    print("[MAIN] Root endpoint called")
     return {
         "status": "ok",
         "service": "Tinyproxy Monitor API",
@@ -113,6 +119,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """상세 헬스체크"""
+    print("[MAIN] Health check endpoint called")
     health_status = {
         "status": "healthy",
         "checks": {

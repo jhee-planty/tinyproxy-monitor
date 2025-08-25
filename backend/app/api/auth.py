@@ -39,8 +39,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     - root 계정은 차단됨
     - PAM을 통한 시스템 계정 인증
     """
+    print(f"[AUTH DEBUG] Login attempt - username: {form_data.username}")
+    print(f"[AUTH DEBUG] DISABLE_AUTH setting: {settings.DISABLE_AUTH}")
+    
     # 인증 비활성화 모드
     if settings.DISABLE_AUTH:
+        print("[AUTH DEBUG] Auth disabled, returning demo token")
         return {
             "access_token": "demo-token",
             "token_type": "bearer",
@@ -54,13 +58,19 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     
     # 차단된 사용자 체크
     if form_data.username in settings.BLOCKED_USERS:
+        print(f"[AUTH DEBUG] User {form_data.username} is blocked")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"User '{form_data.username}' is not allowed to login"
         )
     
     # PAM 인증
-    if not linux_auth.authenticate(form_data.username, form_data.password):
+    print(f"[AUTH DEBUG] Attempting PAM authentication for user: {form_data.username}")
+    auth_result = linux_auth.authenticate(form_data.username, form_data.password)
+    print(f"[AUTH DEBUG] PAM authentication result: {auth_result}")
+    
+    if not auth_result:
+        print(f"[AUTH DEBUG] Authentication failed for user: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -68,8 +78,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
     
     # 사용자 정보 조회
+    print(f"[AUTH DEBUG] Getting user info for: {form_data.username}")
     user_info = linux_auth.get_user_info(form_data.username)
+    print(f"[AUTH DEBUG] User info retrieved: {user_info}")
+    
     if not user_info:
+        print(f"[AUTH DEBUG] Failed to get user info for: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get user information"
@@ -81,6 +95,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         data={"sub": form_data.username},
         expires_delta=access_token_expires
     )
+    
+    print(f"[AUTH DEBUG] Token created successfully for user: {form_data.username}")
     
     return {
         "access_token": access_token,
@@ -131,6 +147,10 @@ async def check_auth_status():
     """
     인증 시스템 활성화 상태 확인
     """
+    print(f"[AUTH DEBUG] Check auth status called")
+    print(f"[AUTH DEBUG] DISABLE_AUTH: {settings.DISABLE_AUTH}")
+    print(f"[AUTH DEBUG] BLOCKED_USERS: {settings.BLOCKED_USERS}")
+    
     return {
         "auth_enabled": not settings.DISABLE_AUTH,
         "blocked_users": settings.BLOCKED_USERS
