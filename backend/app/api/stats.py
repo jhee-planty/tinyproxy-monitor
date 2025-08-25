@@ -189,8 +189,27 @@ async def get_stats_summary() -> Dict:
     - stats: 기본 통계 데이터
     """
     
-    # 기본 통계 가져오기
-    stats = await get_stats()
+    try:
+        # 기본 통계 가져오기
+        stats = await get_stats()
+    except HTTPException:
+        # Tinyproxy 연결 실패 시 기본값 반환
+        return {
+            "total_connections": 0,
+            "total_errors": 0,
+            "error_rate": 0.0,
+            "current_load_ratio": 0.0,
+            "stats": {
+                "package": "tinyproxy",
+                "opens": 0,
+                "requests": 0,
+                "bad_connections": 0,
+                "denied": 0,
+                "refused": 0,
+                "source": "default",
+                "error": "Tinyproxy not accessible"
+            }
+        }
     
     # 메트릭 계산
     total_errors = stats["bad_connections"] + stats["denied"] + stats["refused"]

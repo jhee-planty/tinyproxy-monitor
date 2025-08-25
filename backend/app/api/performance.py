@@ -25,6 +25,29 @@ async def get_current_performance() -> Dict[str, Any]:
         
         return metrics
         
+    except HTTPException:
+        # Tinyproxy 연결 실패 시 기본값 반환
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "throughput": 0.0,
+            "error_rate": 0.0,
+            "active_connections": 0,
+            "errors": {
+                "bad": 0,
+                "denied": 0,
+                "refused": 0,
+                "total": 0
+            },
+            "latency": {
+                "p50": 0.0,
+                "p95": 0.0,
+                "p99": 0.0,
+                "avg": 0.0,
+                "max": 0.0,
+                "min": 0.0
+            },
+            "error": "Tinyproxy not accessible"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
