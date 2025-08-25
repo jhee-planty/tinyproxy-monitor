@@ -45,7 +45,7 @@ async def get_top_processes(limit: int = Query(10, ge=1, le=50)) -> List[Dict]:
 
 
 @router.get("/metrics/network-connections")
-async def get_network_connections() -> Dict[str, int]:
+async def get_network_connections() -> Dict[str, Any]:
     """네트워크 연결 상태별 통계"""
     
     connections = psutil.net_connections()

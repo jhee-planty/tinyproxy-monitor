@@ -27,7 +27,7 @@ class Settings:
     
     TINYPROXY_STATS_HOST: str = os.getenv(
         "TINYPROXY_STATS_HOST",
-        "localhost:8888"
+        "localhost:3128"
     )
     
     TINYPROXY_STATS_HOSTNAME: str = os.getenv(

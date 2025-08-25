@@ -27,3 +27,5 @@ lerna-debug.log*
 *.swp
 *.swo
 *~
+
+package-lock.json
