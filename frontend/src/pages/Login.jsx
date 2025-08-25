@@ -14,12 +14,16 @@ const Login = ({ onLogin }) => {
     setError('')
     setLoading(true)
 
+    console.log('Login attempt:', { username, API_URL })
+
     try {
       // OAuth2 형식으로 전송
       const formData = new URLSearchParams()
       formData.append('username', username)
       formData.append('password', password)
 
+      console.log('Sending request to:', `${API_URL}/api/auth/login`)
+      
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -28,7 +32,9 @@ const Login = ({ onLogin }) => {
         body: formData
       })
 
+      console.log('Response status:', response.status)
       const data = await response.json()
+      console.log('Response data:', data)
 
       if (response.ok) {
         // 토큰 저장

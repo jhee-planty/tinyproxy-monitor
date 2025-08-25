@@ -18,13 +18,17 @@ function App() {
   }, [])
 
   const checkAuthStatus = async () => {
+    console.log('Checking auth status...')
     try {
       // 먼저 인증이 활성화되어 있는지 확인
+      console.log('Fetching:', `${API_URL}/api/auth/check-auth`)
       const authCheckRes = await fetch(`${API_URL}/api/auth/check-auth`)
       const authCheck = await authCheckRes.json()
+      console.log('Auth check response:', authCheck)
       
       if (!authCheck.auth_enabled) {
         // 인증이 비활성화된 경우 자동 로그인
+        console.log('Auth disabled, auto-login')
         setIsAuthenticated(true)
         setUserInfo({ username: 'demo', is_admin: true })
         setCheckingAuth(false)
