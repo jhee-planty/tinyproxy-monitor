@@ -18,8 +18,8 @@ const Dashboard = () => {
   const [error, setError] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(null)
 
-  // API Base URL
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  // Vite 프록시를 사용하도록 상대 경로 사용
+  // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
   
   // 인증 헤더 가져오기
   const getAuthHeaders = () => {
@@ -40,13 +40,13 @@ const Dashboard = () => {
       // 병렬로 모든 데이터 가져오기
       const headers = getAuthHeaders()
       const [statusRes, statsRes, logsRes, systemRes, perfRes, sysHistRes, perfHistRes] = await Promise.allSettled([
-        fetch(`${API_URL}/api/process/status`, { headers }),
-        fetch(`${API_URL}/api/stats/summary`, { headers }),
-        fetch(`${API_URL}/api/logs/tail?lines=10`, { headers }),
-        fetch(`${API_URL}/api/system/metrics/current`, { headers }),
-        fetch(`${API_URL}/api/performance/metrics/current`, { headers }),
-        fetch(`${API_URL}/api/system/metrics/history?seconds=300`, { headers }),
-        fetch(`${API_URL}/api/performance/metrics/history?seconds=300`, { headers })
+        fetch(`/api/process/status`, { headers }),
+        fetch(`/api/stats/summary`, { headers }),
+        fetch(`/api/logs/tail?lines=10`, { headers }),
+        fetch(`/api/system/metrics/current`, { headers }),
+        fetch(`/api/performance/metrics/current`, { headers }),
+        fetch(`/api/system/metrics/history?seconds=300`, { headers }),
+        fetch(`/api/performance/metrics/history?seconds=300`, { headers })
       ])
 
       // 프로세스 상태

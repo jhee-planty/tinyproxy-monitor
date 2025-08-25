@@ -7,14 +7,15 @@ const Login = ({ onLogin }) => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  // Vite 프록시를 사용하도록 상대 경로로 변경
+  // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    console.log('Login attempt:', { username, API_URL })
+    console.log('Login attempt:', { username })
 
     try {
       // OAuth2 형식으로 전송
@@ -22,9 +23,9 @@ const Login = ({ onLogin }) => {
       formData.append('username', username)
       formData.append('password', password)
 
-      console.log('Sending request to:', `${API_URL}/api/auth/login`)
+      console.log('Sending request to:', `/api/auth/login`)
       
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(`/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

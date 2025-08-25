@@ -31,8 +31,8 @@ const Logs = () => {
   const heartbeatIntervalRef = useRef(null)
   
   // 설정
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  const WS_URL = API_URL.replace('http://', 'ws://').replace('https://', 'wss://')
+  // Vite 프록시를 위해 상대 경로 사용
+  const WS_URL = window.location.origin.replace('http://', 'ws://').replace('https://', 'wss://')
   const MAX_LOGS = 1000
   const MAX_RECONNECT_ATTEMPTS = 5
   const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]
@@ -74,7 +74,7 @@ const Logs = () => {
   // 초기 로그 로드
   const fetchInitialLogs = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/logs/tail?lines=100`)
+      const response = await fetch(`/api/logs/tail?lines=100`)
       if (response.ok) {
         const data = await response.json()
         const logsWithIds = (data.logs || []).map((log, index) => ({

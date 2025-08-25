@@ -10,7 +10,8 @@ function App() {
   const [userInfo, setUserInfo] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  // Vite 프록시를 사용하도록 상대 경로 사용
+  // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
   // 초기 인증 상태 확인
   useEffect(() => {
@@ -21,8 +22,8 @@ function App() {
     console.log('Checking auth status...')
     try {
       // 먼저 인증이 활성화되어 있는지 확인
-      console.log('Fetching:', `${API_URL}/api/auth/check-auth`)
-      const authCheckRes = await fetch(`${API_URL}/api/auth/check-auth`)
+      console.log('Fetching:', `/api/auth/check-auth`)
+      const authCheckRes = await fetch(`/api/auth/check-auth`)
       const authCheck = await authCheckRes.json()
       console.log('Auth check response:', authCheck)
       
@@ -41,7 +42,7 @@ function App() {
       
       if (token && storedUserInfo) {
         // 토큰 유효성 검증
-        const response = await fetch(`${API_URL}/api/auth/me`, {
+        const response = await fetch(`/api/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
