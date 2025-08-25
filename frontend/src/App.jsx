@@ -17,7 +17,7 @@ function App() {
             className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
             onClick={() => setCurrentPage('dashboard')}
           >
-            Dashboard
+            System Overview
           </button>
           <button
             className={`nav-item ${currentPage === 'logs' ? 'active' : ''}`}

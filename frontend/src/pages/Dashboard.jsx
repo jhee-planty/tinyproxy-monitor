@@ -139,8 +139,16 @@ const Dashboard = () => {
       <div className="dashboard-header">
         <h2>System Overview</h2>
         <div className="header-actions">
-          <button onClick={handleRefresh} className="refresh-btn">
-            🔄 Refresh
+          <button 
+            onClick={handleRefresh} 
+            className="refresh-btn"
+            disabled={loading}
+          >
+            {loading ? (
+              <>⟳ Refreshing...</>
+            ) : (
+              <>↻ Refresh</>
+            )}
           </button>
           {lastUpdate && (
             <span className="last-update">
