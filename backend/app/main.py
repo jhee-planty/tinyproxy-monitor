@@ -11,8 +11,9 @@ from pathlib import Path
 # Add the parent directory to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.api import logs, process, stats, websocket, system, performance
+from app.api import logs, process, stats, websocket, system, performance, auth
 from app.core.config import settings
+from app.core.auth import get_optional_user
 from app.core.system_metrics import system_collector
 from app.core.performance_analyzer import performance_analyzer
 
@@ -79,6 +80,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers - 인증 라우터 (보호 없음)
+app.include_router(auth.router)
 
 # Include routers - 기존 라우터
 app.include_router(process.router)

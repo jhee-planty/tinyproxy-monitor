@@ -89,6 +89,24 @@ class Settings:
         "5.0"
     ))
     
+    # JWT 인증 설정
+    SECRET_KEY: str = os.getenv(
+        "SECRET_KEY",
+        "your-secret-key-change-this-in-production-please"
+    )
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv(
+        "ACCESS_TOKEN_EXPIRE_MINUTES",
+        "720"  # 12시간
+    ))
+    
+    # 인증 설정
+    DISABLE_AUTH: bool = os.getenv("DISABLE_AUTH", "false").lower() == "true"
+    BLOCKED_USERS: list = os.getenv(
+        "BLOCKED_USERS",
+        "root"  # root는 기본적으로 차단
+    ).split(",")
+    
     @classmethod
     def validate_paths(cls) -> dict:
         """

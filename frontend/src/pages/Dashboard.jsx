@@ -20,6 +20,17 @@ const Dashboard = () => {
 
   // API Base URL
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  
+  // 인증 헤더 가져오기
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('access_token')
+    if (token && token !== 'demo-token') {
+      return {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+    return {}
+  }
 
   // 데이터 가져오기
   const fetchData = async () => {
@@ -27,14 +38,15 @@ const Dashboard = () => {
       setError(null)
       
       // 병렬로 모든 데이터 가져오기
+      const headers = getAuthHeaders()
       const [statusRes, statsRes, logsRes, systemRes, perfRes, sysHistRes, perfHistRes] = await Promise.allSettled([
-        fetch(`${API_URL}/api/process/status`),
-        fetch(`${API_URL}/api/stats/summary`),
-        fetch(`${API_URL}/api/logs/tail?lines=10`),
-        fetch(`${API_URL}/api/system/metrics/current`),
-        fetch(`${API_URL}/api/performance/metrics/current`),
-        fetch(`${API_URL}/api/system/metrics/history?seconds=300`),
-        fetch(`${API_URL}/api/performance/metrics/history?seconds=300`)
+        fetch(`${API_URL}/api/process/status`, { headers }),
+        fetch(`${API_URL}/api/stats/summary`, { headers }),
+        fetch(`${API_URL}/api/logs/tail?lines=10`, { headers }),
+        fetch(`${API_URL}/api/system/metrics/current`, { headers }),
+        fetch(`${API_URL}/api/performance/metrics/current`, { headers }),
+        fetch(`${API_URL}/api/system/metrics/history?seconds=300`, { headers }),
+        fetch(`${API_URL}/api/performance/metrics/history?seconds=300`, { headers })
       ])
 
       // 프로세스 상태

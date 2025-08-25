@@ -12,6 +12,7 @@
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  gap: 2rem;
 }
 
 .navbar h1 {
@@ -22,6 +23,8 @@
 .navbar-menu {
   display: flex;
   gap: 1rem;
+  flex: 1;
+  justify-content: center;
 }
 
 .nav-item {
@@ -49,6 +52,59 @@
   flex: 1;
   background: #f9fafb;
   width: 100%;
+}
+
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  color: #ecf0f1;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-badge {
+  background: #f59e0b;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.logout-btn {
+  padding: 6px 12px;
+  background: transparent;
+  color: #ecf0f1;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.5);
+}
+
+.app-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+}
+
+.loading-spinner {
+  color: #6b7280;
+  font-size: 18px;
 }
 
 .dashboard h2,
