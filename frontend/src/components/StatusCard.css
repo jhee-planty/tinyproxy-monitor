@@ -6,6 +6,28 @@
   height: 100%;
 }
 
+.status-card.compact {
+  padding: 15px;
+}
+
+.status-card.compact h3 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.status-card.compact .status-header {
+  margin-bottom: 10px;
+}
+
+.status-card.compact .status-badge {
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+.status-card.compact .status-row {
+  padding: 4px 0;
+}
+
 .status-header {
   display: flex;
   justify-content: space-between;

@@ -1,7 +1,7 @@
 import React from 'react'
 import './StatusCard.css'
 
-const StatusCard = ({ status }) => {
+const StatusCard = ({ status, compact = false }) => {
   if (!status) {
     return (
       <div className="status-card">
@@ -34,6 +34,32 @@ const StatusCard = ({ status }) => {
   }
 
   const uptime = calculateUptime()
+
+  if (compact) {
+    return (
+      <div className="status-card compact">
+        <div className="status-header">
+          <h3>Process Status</h3>
+          <span className={`status-badge ${statusClass}`}>
+            <span className="status-dot"></span>
+            {statusText}
+          </span>
+        </div>
+        <div className="status-details">
+          <div className="status-row">
+            <span className="status-label">PID:</span>
+            <span className="status-value">{status.pid > 0 ? status.pid : '-'}</span>
+          </div>
+          {uptime && (
+            <div className="status-row">
+              <span className="status-label">Uptime:</span>
+              <span className="status-value">{uptime}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="status-card">

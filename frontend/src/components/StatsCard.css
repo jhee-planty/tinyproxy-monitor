@@ -10,8 +10,16 @@
 
 /* 콤팩트 모드 - 시스템/성능 메트릭용 */
 .stats-card.compact {
-  padding: 10px;
-  min-height: 80px;
+  padding: 15px;
+  min-height: auto;
+}
+
+.stats-card.compact .stats-main {
+  margin-bottom: 0;
+}
+
+.stats-card.compact .stats-secondary {
+  display: none;
 }
 
 /* 시스템 메트릭 카드 스타일 */

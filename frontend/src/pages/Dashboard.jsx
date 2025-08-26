@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import StatusCard from '../components/StatusCard'
 import StatsCard from '../components/StatsCard'
-import RecentLogs from '../components/RecentLogs'
 import SystemMetricsChart from '../components/SystemMetricsChart'
-import PerformanceChart from '../components/PerformanceChart'
 import './Dashboard.css'
 
 const Dashboard = () => {
   const [processStatus, setProcessStatus] = useState(null)
   const [stats, setStats] = useState(null)
-  const [recentLogs, setRecentLogs] = useState([])
   const [systemMetrics, setSystemMetrics] = useState(null)
   const [performanceMetrics, setPerformanceMetrics] = useState(null)
   const [systemHistory, setSystemHistory] = useState([])
-  const [performanceHistory, setPerformanceHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(null)
@@ -39,14 +35,12 @@ const Dashboard = () => {
       
       // 병렬로 모든 데이터 가져오기
       const headers = getAuthHeaders()
-      const [statusRes, statsRes, logsRes, systemRes, perfRes, sysHistRes, perfHistRes] = await Promise.allSettled([
+      const [statusRes, statsRes, systemRes, perfRes, sysHistRes] = await Promise.allSettled([
         fetch(`/api/process/status`, { headers }),
         fetch(`/api/stats/summary`, { headers }),
-        fetch(`/api/logs/tail?lines=10`, { headers }),
         fetch(`/api/system/metrics/current`, { headers }),
         fetch(`/api/performance/metrics/current`, { headers }),
-        fetch(`/api/system/metrics/history?seconds=300`, { headers }),
-        fetch(`/api/performance/metrics/history?seconds=300`, { headers })
+        fetch(`/api/system/metrics/history?seconds=300`, { headers })
       ])
 
       // 프로세스 상태
@@ -61,11 +55,7 @@ const Dashboard = () => {
         setStats(statsData)
       }
 
-      // 최근 로그
-      if (logsRes.status === 'fulfilled' && logsRes.value.ok) {
-        const logsData = await logsRes.value.json()
-        setRecentLogs(logsData.logs || [])
-      }
+
 
       // 시스템 메트릭
       if (systemRes.status === 'fulfilled' && systemRes.value.ok) {
@@ -85,11 +75,7 @@ const Dashboard = () => {
         setSystemHistory(formatSystemHistory(sysHistData))
       }
 
-      // 성능 히스토리
-      if (perfHistRes.status === 'fulfilled' && perfHistRes.value.ok) {
-        const perfHistData = await perfHistRes.value.json()
-        setPerformanceHistory(formatPerformanceHistory(perfHistData))
-      }
+
 
       setLastUpdate(new Date())
       setLoading(false)
@@ -111,15 +97,7 @@ const Dashboard = () => {
     }))
   }
 
-  const formatPerformanceHistory = (data) => {
-    if (!Array.isArray(data)) return []
-    return data.slice(-60).map(item => ({
-      time: new Date(item.timestamp).toLocaleTimeString(),
-      throughput: item.throughput || 0,
-      errorRate: item.error_rate || 0,
-      p95: item.latency?.p95 || 0
-    }))
-  }
+
 
   // 초기 로드 및 자동 새로고침
   useEffect(() => {
@@ -176,115 +154,73 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="dashboard-grid">
-        {/* 시스템 메트릭 컴팩트 카드 - 상단 배치 */}
+      <div className="dashboard-content">
+        {/* 첫 번째 줄: 프로세스 상태와 주요 통계 */}
+        <div className="status-row">
+          <div className="status-item process-status">
+            <StatusCard status={processStatus} compact={true} />
+          </div>
+          <div className="status-item">
+            <StatsCard 
+              title="Connections"
+              stats={stats}
+              type="connections"
+              compact={true}
+            />
+          </div>
+          <div className="status-item">
+            <StatsCard 
+              title="Requests"
+              stats={stats}
+              type="requests"
+              compact={true}
+            />
+          </div>
+          <div className="status-item">
+            <StatsCard 
+              title="Errors"
+              stats={stats}
+              type="errors"
+              compact={true}
+            />
+          </div>
+        </div>
+
+        {/* 두 번째 줄: 시스템 메트릭과 차트 */}
         <div className="metrics-row">
-          {systemMetrics && (
-            <>
-              <div className="metric-item">
-                <StatsCard 
-                  title="CPU"
-                  value={systemMetrics.cpu?.percent?.toFixed(1)}
-                  unit="%"
-                  type="system"
-                  compact={true}
-                />
+          <div className="metrics-left">
+            {systemMetrics && (
+              <div className="system-stats">
+                <div className="stat-box">
+                  <span className="stat-label">CPU</span>
+                  <span className="stat-value">{systemMetrics.cpu?.percent?.toFixed(1)}%</span>
+                </div>
+                <div className="stat-box">
+                  <span className="stat-label">Memory</span>
+                  <span className="stat-value">{systemMetrics.memory?.percent?.toFixed(1)}%</span>
+                </div>
+                <div className="stat-box">
+                  <span className="stat-label">Disk</span>
+                  <span className="stat-value">{systemMetrics.disk?.percent?.toFixed(1)}%</span>
+                </div>
+                {performanceMetrics && (
+                  <div className="stat-box">
+                    <span className="stat-label">Throughput</span>
+                    <span className="stat-value">{performanceMetrics.throughput?.toFixed(1)} req/s</span>
+                  </div>
+                )}
               </div>
-              <div className="metric-item">
-                <StatsCard 
-                  title="Memory"
-                  value={systemMetrics.memory?.percent?.toFixed(1)}
-                  unit="%"
-                  type="system"
-                  compact={true}
-                />
-              </div>
-              <div className="metric-item">
-                <StatsCard 
-                  title="Disk"
-                  value={systemMetrics.disk?.percent?.toFixed(1)}
-                  unit="%"
-                  type="system"
-                  compact={true}
-                />
-              </div>
-            </>
-          )}
-          {performanceMetrics && (
-            <>
-              <div className="metric-item">
-                <StatsCard 
-                  title="Throughput"
-                  value={performanceMetrics.throughput?.toFixed(1)}
-                  unit="req/s"
-                  type="performance"
-                  compact={true}
-                />
-              </div>
-              <div className="metric-item">
-                <StatsCard 
-                  title="P95 Latency"
-                  value={performanceMetrics.latency?.p95?.toFixed(0)}
-                  unit="ms"
-                  type="performance"
-                  compact={true}
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* 주요 상태 카드들 - 중간 크기 */}
-        <div className="grid-item grid-span-2">
-          <StatusCard status={processStatus} />
-        </div>
-
-        <div className="grid-item">
-          <StatsCard 
-            title="Connections"
-            stats={stats}
-            type="connections"
-          />
-        </div>
-
-        <div className="grid-item">
-          <StatsCard 
-            title="Requests"
-            stats={stats}
-            type="requests"
-          />
-        </div>
-
-        <div className="grid-item">
-          <StatsCard 
-            title="Errors"
-            stats={stats}
-            type="errors"
-          />
-        </div>
-
-        {/* 차트 섹션 */}
-        {systemHistory.length > 0 && (
-          <div className="grid-item grid-span-3">
-            <SystemMetricsChart 
-              data={systemHistory}
-              title="System Resources (Last 5 min)"
-            />
+            )}
           </div>
-        )}
-
-        {performanceHistory.length > 0 && (
-          <div className="grid-item grid-span-3">
-            <PerformanceChart 
-              data={performanceHistory}
-              title="Performance Metrics (Last 5 min)"
-            />
+          <div className="metrics-right">
+            {systemHistory.length > 0 && (
+              <SystemMetricsChart 
+                data={systemHistory}
+                title="System Resources (Last 5 min)"
+                compact={true}
+              />
+            )}
           </div>
-        )}
-
-        {/* 최근 로그 */}
-        <div className="grid-item grid-span-full">
-          <RecentLogs logs={recentLogs} />
         </div>
       </div>
     </div>

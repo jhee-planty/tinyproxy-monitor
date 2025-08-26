@@ -2,6 +2,53 @@ import React from 'react'
 import './StatsCard.css'
 
 const StatsCard = ({ title, stats, type, value, unit, compact = false }) => {
+  // Compact mode for status row
+  if (compact && stats) {
+    const cardClass = `stats-card compact ${type}-card`
+    
+    switch (type) {
+      case 'connections':
+        return (
+          <div className={cardClass}>
+            <h3>{title}</h3>
+            <div className="stats-main">
+              <div className="stats-number">{stats.stats?.opens || 0}</div>
+              <div className="stats-label">Active</div>
+            </div>
+          </div>
+        )
+      
+      case 'requests':
+        return (
+          <div className={cardClass}>
+            <h3>{title}</h3>
+            <div className="stats-main">
+              <div className="stats-number">{(stats.stats?.requests || 0).toLocaleString()}</div>
+              <div className="stats-label">Total</div>
+            </div>
+          </div>
+        )
+      
+      case 'errors':
+        const errorRate = stats.error_rate || 0
+        const errorClass = errorRate > 5 ? 'error-high' : errorRate > 1 ? 'error-medium' : 'error-low'
+        return (
+          <div className={cardClass}>
+            <h3>{title}</h3>
+            <div className="stats-main">
+              <div className={`stats-number ${errorClass}`}>
+                {stats.total_errors || 0}
+              </div>
+              <div className="stats-label">{errorRate.toFixed(1)}%</div>
+            </div>
+          </div>
+        )
+      
+      default:
+        return null
+    }
+  }
+  
   // 새로운 간단한 메트릭 카드 (시스템, 성능 메트릭용)
   if (type === 'system' || type === 'performance') {
     const cardClass = `stats-card ${type}-card ${compact ? 'compact' : ''}`

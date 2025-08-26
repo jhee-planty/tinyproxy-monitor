@@ -6,9 +6,21 @@
   margin-bottom: 20px;
 }
 
+.chart-container.compact {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  margin: 0;
+}
+
 .chart-title {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 20px;
   color: #333;
+}
+
+.chart-container.compact .chart-title {
+  font-size: 14px;
+  margin-bottom: 10px;
 }

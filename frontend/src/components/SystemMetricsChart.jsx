@@ -2,11 +2,13 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './SystemMetricsChart.css';
 
-function SystemMetricsChart({ data, title }) {
+function SystemMetricsChart({ data, title, compact = false }) {
+  const height = compact ? 260 : 300;
+  
   return (
-    <div className="chart-container">
+    <div className={`chart-container ${compact ? 'compact' : ''}`}>
       <h3 className="chart-title">{title}</h3>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
