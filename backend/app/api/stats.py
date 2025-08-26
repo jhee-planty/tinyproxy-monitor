@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/stats", tags=["stats"])
 
 def parse_stats_html(html_content: str) -> Dict:
     """
-    Tinyproxy 통계 HTML 페이지를 파싱하여 데이터 추출
+    Proxy 통계 HTML 페이지를 파싱하여 데이터 추출
     
     두 가지 형식 지원:
     1. 템플릿 기반 (테이블 형식)
@@ -24,7 +24,7 @@ def parse_stats_html(html_content: str) -> Dict:
     """
     
     stats_data = {
-        "package": "tinyproxy",
+        "package": "Proxy",
         "opens": 0,
         "requests": 0,
         "bad_connections": 0,
@@ -105,7 +105,7 @@ def parse_stats_html(html_content: str) -> Dict:
 
 async def fetch_stats_page() -> str:
     """
-    Tinyproxy 통계 페이지 HTML 가져오기
+    Proxy 통계 페이지 HTML 가져오기
     
     Returns:
     - HTML 콘텐츠 문자열
@@ -133,17 +133,17 @@ async def fetch_stats_page() -> str:
         except httpx.TimeoutException:
             raise HTTPException(
                 status_code=504,
-                detail=f"Timeout connecting to tinyproxy stats at {stats_url}"
+                detail=f"Timeout connecting to Proxy stats at {stats_url}"
             )
         except httpx.ConnectError:
             raise HTTPException(
                 status_code=503,
-                detail=f"Cannot connect to tinyproxy at {stats_url}. Is tinyproxy running?"
+                detail=f"Cannot connect to Proxy at {stats_url}. Is Proxy running?"
             )
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=502,
-                detail=f"HTTP error from tinyproxy: {e.response.status_code}"
+                detail=f"HTTP error from Proxy: {e.response.status_code}"
             )
         except Exception as e:
             raise HTTPException(
@@ -154,10 +154,10 @@ async def fetch_stats_page() -> str:
 @router.get("/")
 async def get_stats() -> Dict:
     """
-    Tinyproxy 통계 정보 조회
+    Proxy 통계 정보 조회
     
     Returns:
-    - package: 패키지명 (tinyproxy)
+    - package: 패키지명 (Proxy)
     - opens: 현재 열린 연결 수
     - requests: 총 요청 수
     - bad_connections: 잘못된 연결 수
@@ -193,21 +193,21 @@ async def get_stats_summary() -> Dict:
         # 기본 통계 가져오기
         stats = await get_stats()
     except HTTPException:
-        # Tinyproxy 연결 실패 시 기본값 반환
+        # Proxy 연결 실패 시 기본값 반환
         return {
             "total_connections": 0,
             "total_errors": 0,
             "error_rate": 0.0,
             "current_load_ratio": 0.0,
             "stats": {
-                "package": "tinyproxy",
+                "package": "Proxy",
                 "opens": 0,
                 "requests": 0,
                 "bad_connections": 0,
                 "denied": 0,
                 "refused": 0,
                 "source": "default",
-                "error": "Tinyproxy not accessible"
+                "error": "Proxy not accessible"
             }
         }
     
@@ -230,7 +230,7 @@ async def check_stats_availability() -> Dict:
     """
     통계 수집 가능 여부 확인
     
-    Tinyproxy 통계 페이지 접근 가능 여부와 설정 정보 반환
+    Proxy 통계 페이지 접근 가능 여부와 설정 정보 반환
     
     Returns:
     - available: 통계 수집 가능 여부

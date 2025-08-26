@@ -65,7 +65,7 @@ const StatsCard = ({ title, stats, type, value, unit, processStatus, last5minSta
     )
   }
 
-  // 기존 Tinyproxy 통계 카드
+  // 기존 proxy 통계 카드
   if (!stats) {
     return (
       <div className="stats-card">

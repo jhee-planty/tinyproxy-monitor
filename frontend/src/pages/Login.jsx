@@ -69,7 +69,7 @@ const Login = ({ onLogin }) => {
     <div className="login-container">
       <div className="login-box">
         <div className="login-header">
-          <h1>Tinyproxy Monitor</h1>
+          <h1>Proxy Monitor</h1>
           <p>Linux System Authentication</p>
         </div>
         

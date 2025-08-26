@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './TinyproxyMetricsChart.css';
 
-function TinyproxyMetricsChart({ title = "Tinyproxy Metrics" }) {
+function TinyproxyMetricsChart({ title = "Proxy Metrics" }) {
   const [data, setData] = useState([]);
   const [timeRange, setTimeRange] = useState(1); // 기본 1시간
   const [loading, setLoading] = useState(false);
@@ -96,7 +96,7 @@ function TinyproxyMetricsChart({ title = "Tinyproxy Metrics" }) {
   };
 
   return (
-    <div className="tinyproxy-chart-container">
+    <div className="proxy-chart-container">
       <div className="chart-header">
         <h3 className="chart-title">{title}</h3>
         <div className="chart-controls">

@@ -101,7 +101,7 @@ function App() {
     <div className="app">
       <nav className="navbar">
         <div className="navbar-brand">
-          <h1>Tinyproxy Monitor</h1>
+          <h1>Proxy Monitor</h1>
         </div>
         <div className="navbar-menu">
           <button

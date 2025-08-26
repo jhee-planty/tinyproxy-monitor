@@ -14,31 +14,31 @@ load_dotenv()
 class Settings:
     """애플리케이션 설정 클래스"""
     
-    # Tinyproxy 관련 설정
-    TINYPROXY_LOG_PATH: str = os.getenv(
-        "TINYPROXY_LOG_PATH",
-        "/var/log/tinyproxy/tinyproxy.log"
+    # Proxy 관련 설정
+    PROXY_LOG_PATH: str = os.getenv(
+        "PROXY_LOG_PATH",
+        "/var/log/proxy/proxy.log"
     )
     
-    TINYPROXY_PID_PATH: str = os.getenv(
-        "TINYPROXY_PID_PATH",
-        "/var/run/tinyproxy/tinyproxy.pid"
+    PROXY_PID_PATH: str = os.getenv(
+        "PROXY_PID_PATH",
+        "/var/run/proxy/proxy.pid"
     )
     
-    TINYPROXY_STATS_HOST: str = os.getenv(
-        "TINYPROXY_STATS_HOST",
+    PROXY_STATS_HOST: str = os.getenv(
+        "PROXY_STATS_HOST",
         "localhost:3128"
     )
     
-    TINYPROXY_STATS_HOSTNAME: str = os.getenv(
-        "TINYPROXY_STATS_HOSTNAME",
-        "tinyproxy.stats"
+    PROXY_STATS_HOSTNAME: str = os.getenv(
+        "PROXY_STATS_HOSTNAME",
+        "proxy.stats"
     )
     
     # Systemd 서비스 설정
-    TINYPROXY_SERVICE_NAME: str = os.getenv(
-        "TINYPROXY_SERVICE_NAME",
-        "tinyproxy"
+    PROXY_SERVICE_NAME: str = os.getenv(
+        "PROXY_SERVICE_NAME",
+        "proxy"
     )
     
     # API 서버 설정
@@ -131,7 +131,7 @@ class Settings:
         - 설정 딕셔너리
         """
         return {
-            "tinyproxy": {
+            "proxy": {
                 "log_path": cls.TINYPROXY_LOG_PATH,
                 "pid_path": cls.TINYPROXY_PID_PATH,
                 "stats_host": cls.TINYPROXY_STATS_HOST,

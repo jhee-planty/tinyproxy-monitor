@@ -44,7 +44,7 @@ def get_service_property(property_name: str, service: str = settings.TINYPROXY_S
 @router.get("/status")
 async def get_process_status() -> Dict:
     """
-    Systemd를 통한 Tinyproxy 프로세스 상태 확인
+    Systemd를 통한 Proxy 프로세스 상태 확인
     
     Returns:
     - service: 서비스 이름

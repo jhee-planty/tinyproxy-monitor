@@ -68,8 +68,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Tinyproxy Monitor",
-    description="Tinyproxy 및 시스템 모니터링 API", 
+    title="Proxy Monitor",
+    description="Proxy 및 시스템 모니터링 API", 
     version="2.0.0",
     lifespan=lifespan
 )
@@ -105,7 +105,7 @@ async def root():
     print("[MAIN] Root endpoint called")
     return {
         "status": "ok",
-        "service": "Tinyproxy Monitor API",
+        "service": "Proxy Monitor API",
         "version": "2.0.0",
         "features": [
             "System Metrics",
@@ -130,7 +130,7 @@ async def health_check():
         }
     }
     
-    # Tinyproxy 통계 페이지 확인
+    # Proxy 통계 페이지 확인
     try:
         from app.api.stats import check_stats_availability
         stats_check = await check_stats_availability()

@@ -105,8 +105,8 @@
   flex: 1.5;
 }
 
-/* Second row: Tinyproxy metrics charts */
-.tinyproxy-metrics-row {
+/* Second row: Proxy metrics charts */
+.proxy-metrics-row {
   width: 100%;
   margin: 0;
 }

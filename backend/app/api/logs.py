@@ -22,7 +22,7 @@ def parse_log_line(line: str) -> Optional[Dict]:
     if match:
         timestamp_str, pid, level, message = match.groups()
         
-        # 현재 연도 추가 (tinyproxy 로그는 연도 정보가 없음)
+        # 현재 연도 추가 (proxy 로그는 연도 정보가 없음)
         current_year = datetime.now().year
         try:
             # 월 일 시:분:초 형식을 파싱

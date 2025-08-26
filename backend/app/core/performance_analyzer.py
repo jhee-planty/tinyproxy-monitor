@@ -8,18 +8,25 @@ from typing import Dict, Any, List, Optional
 from collections import deque
 import asyncio
 from app.core.config import settings
+import os
+import pickle
+from datetime import datetime, timedelta
 
+BACKUP_DIR = "/tmp/metrics_buffer_backup"
+os.makedirs(BACKUP_DIR, exist_ok=True)
 
 class PerformanceAnalyzer:
-    """Tinyproxy 성능 메트릭 분석기"""
-    
-    def __init__(self, buffer_size: int = 86400):  # 24시간 데이터 저장
+    """Proxy 성능 메트릭 분석기"""
+
+    def __init__(self, buffer_size: int = 8640):  # 24시간 데이터 저장
         self.buffer_size = buffer_size
         self.metrics_buffer = deque(maxlen=buffer_size)
         self.response_times = deque(maxlen=1000)
         self.last_stats = None
         self.last_time = None
         self._running = False
+        self.metrics_buffer = load_last_24h_buffer()
+        cleanup_old_files()
         
     def calculate_metrics(self, current_stats: Dict) -> Dict[str, Any]:
         """성능 메트릭 계산 - 누적 통계에서 시간 단위 메트릭 계산"""
@@ -83,8 +90,8 @@ class PerformanceAnalyzer:
                 
                 # 모의 응답시간 생성 (실제로는 로그 파싱 필요)
                 self._simulate_response_times(throughput)
-                
-                # 레이턴시 백분위수 계산
+                '''
+                # 레이턴시 백분위수 계산 (사용하지 않음)
                 if self.response_times:
                     times = list(self.response_times)
                     metrics["latency"] = {
@@ -95,12 +102,13 @@ class PerformanceAnalyzer:
                         "max": round(max(times), 2),
                         "min": round(min(times), 2)
                     }
+                '''
         
         self.last_stats = current_stats
         self.last_time = current_time
         
         return metrics
-    
+
     def _simulate_response_times(self, throughput: float):
         """응답시간 시뮬레이션 (실제 구현시 로그에서 추출)"""
         base_latency = 50  # ms
@@ -112,11 +120,19 @@ class PerformanceAnalyzer:
                 10 * (1 + load_factor)
             )
             self.response_times.append(max(10, latency))  # 최소 10ms
-    
+
     def add_to_buffer(self, metrics: Dict[str, Any]):
         """메트릭을 버퍼에 추가"""
         self.metrics_buffer.append(metrics)
-    
+        # 24시간 초과 데이터 삭제
+        cutoff = datetime.now() - timedelta(hours=24)
+        self.metrics_buffer = [
+            m for m in self.metrics_buffer
+            if datetime.fromisoformat(m['timestamp']) >= cutoff
+        ]
+        save_buffer(self.metrics_buffer)
+        cleanup_old_files()
+
     def get_buffer_data(self, seconds: int = 300) -> List[Dict]:
         """버퍼에서 최근 N초 데이터 반환"""
         if not self.metrics_buffer:
@@ -133,7 +149,7 @@ class PerformanceAnalyzer:
             except:
                 continue
         return list(reversed(recent))
-    
+
     def get_latency_distribution(self) -> Dict[str, Any]:
         """레이턴시 분포 상세 정보"""
         if not self.response_times:
@@ -159,7 +175,7 @@ class PerformanceAnalyzer:
                 "count": len(times)
             }
         }
-    
+
     async def collect_and_analyze(self, stats_fetcher):
         """통계를 수집하고 분석"""
         try:
@@ -171,18 +187,74 @@ class PerformanceAnalyzer:
         except Exception as e:
             print(f"Error in performance analysis: {e}")
         return None
-    
-    async def start_collection(self, stats_fetcher, interval: int = 1):
+
+    async def start_collection(self, stats_fetcher, interval: int = 10):
         """백그라운드 수집 시작"""
         self._running = True
+        
+        if interval < 10:
+            interval = 10  # 최소 10초 간격
+
         while self._running:
             await self.collect_and_analyze(stats_fetcher)
             await asyncio.sleep(interval)
-    
+
     def stop_collection(self):
         """수집 중지"""
         self._running = False
 
+#
+# end of PerformanceAnalyzer class
+#
+
+def get_backup_filename(dt: datetime) -> str:
+    """1시간 단위 파일명 생성"""
+    return os.path.join(BACKUP_DIR, dt.strftime("%Y%m%d%H") + ".pkl")
+
+def save_buffer(buffer: list):
+    """현재 buffer를 1시간 단위 파일로 저장"""
+    if not buffer:
+        return
+    # 현재 시간 기준 파일명
+    now = datetime.now()
+    filename = get_backup_filename(now)
+    # 1시간 내 데이터만 저장
+    hour_start = now.replace(minute=0, second=0, microsecond=0)
+    hour_end = hour_start + timedelta(hours=1)
+    hour_data = [item for item in buffer if hour_start <= datetime.fromisoformat(item['timestamp']) < hour_end]
+    if hour_data:
+        with open(filename, "wb") as f:
+            pickle.dump(hour_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+def load_last_24h_buffer() -> list:
+    """최근 24시간치 파일을 모두 읽어 buffer로 합침"""
+    now = datetime.now()
+    buffer = []
+    for i in range(24):
+        dt = now - timedelta(hours=i)
+        filename = get_backup_filename(dt)
+        if os.path.exists(filename):
+            with open(filename, "rb") as f:
+                buffer.extend(pickle.load(f))
+    # timestamp 기준 정렬
+    buffer.sort(key=lambda x: x['timestamp'])
+    return buffer
+
+def cleanup_old_files():
+    """24시간이 지난 파일 삭제"""
+    now = datetime.now()
+    for fname in os.listdir(BACKUP_DIR):
+        if fname.endswith(".pkl"):
+            try:
+                file_time = datetime.strptime(fname[:10], "%Y%m%d%H")
+                if now - file_time > timedelta(hours=24):
+                    os.remove(os.path.join(BACKUP_DIR, fname))
+            except Exception:
+                continue
+
+
+    
+    
 
 # 싱글톤 인스턴스
 performance_analyzer = PerformanceAnalyzer()

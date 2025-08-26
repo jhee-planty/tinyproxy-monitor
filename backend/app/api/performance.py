@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/performance", tags=["performance"])
 async def get_current_performance() -> Dict[str, Any]:
     """현재 성능 메트릭 조회"""
     try:
-        # Tinyproxy 통계 가져오기
+        # Proxy 통계 가져오기
         stats = await get_stats()
         
         # 성능 메트릭 계산
@@ -27,7 +27,7 @@ async def get_current_performance() -> Dict[str, Any]:
         return metrics
         
     except HTTPException:
-        # Tinyproxy 연결 실패 시 기본값 반환
+        # Proxy 연결 실패 시 기본값 반환
         return {
             "timestamp": datetime.now().isoformat(),
             "throughput": 0.0,
@@ -47,7 +47,7 @@ async def get_current_performance() -> Dict[str, Any]:
                 "max": 0.0,
                 "min": 0.0
             },
-            "error": "Tinyproxy not accessible"
+            "error": "Proxy not accessible"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
