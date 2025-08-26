@@ -105,7 +105,13 @@
   flex: 1.5;
 }
 
-/* Second row: System metrics and chart */
+/* Second row: Tinyproxy metrics charts */
+.tinyproxy-metrics-row {
+  width: 100%;
+  margin: 0;
+}
+
+/* Third row: System metrics and chart */
 .metrics-row {
   display: flex;
   gap: 20px;

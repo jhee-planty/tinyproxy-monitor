@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     )
     tasks.append(system_task)
     
-    # 2. 성능 메트릭 수집 태스크
+    # 2. 성능 메트릭 수집 태스크 (10초 간격으로 변경)
     async def fetch_stats():
         """통계 페이지에서 데이터 가져오기"""
         from app.api.stats import get_stats
@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
             return None
     
     perf_task = asyncio.create_task(
-        performance_analyzer.start_collection(fetch_stats, interval=1)
+        performance_analyzer.start_collection(fetch_stats, interval=10)  # 10초 간격
     )
     tasks.append(perf_task)
     

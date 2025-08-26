@@ -1,7 +1,7 @@
 import React from 'react'
 import './StatsCard.css'
 
-const StatsCard = ({ title, stats, type, value, unit, compact = false }) => {
+const StatsCard = ({ title, stats, type, value, unit, processStatus, last5minStats, compact = false }) => {
   // Compact mode for status row
   if (compact && stats) {
     const cardClass = `stats-card compact ${type}-card`
@@ -86,8 +86,10 @@ const StatsCard = ({ title, stats, type, value, unit, compact = false }) => {
             </div>
             <div className="stats-secondary">
               <div className="stats-item">
-                <span className="item-label">Total:</span>
-                <span className="item-value">{stats.total_connections || 0}</span>
+                <span className="item-label">Last 5min avg:</span>
+                <span className="item-value">
+                  {last5minStats?.connections || 'N/A'}
+                </span>
               </div>
               <div className="stats-item">
                 <span className="item-label">Load:</span>
@@ -98,6 +100,51 @@ const StatsCard = ({ title, stats, type, value, unit, compact = false }) => {
         )
 
       case 'requests':
+        // 평균 요청 수 계산
+        const calculateAvgPerMinute = () => {
+          if (!processStatus?.started_at || !processStatus.running) {
+            return 'N/A'
+          }
+          
+          // systemd 시간 형식 파싱: "Tue 2025-08-26 14:14:45 KST"
+          const parts = processStatus.started_at.split(' ')
+          if (parts.length >= 3) {
+            const datePart = parts[1] // "2025-08-26"
+            const timePart = parts[2] // "14:14:45"
+            
+            // ISO 형식으로 변환
+            const isoString = `${datePart}T${timePart}`
+            const start = new Date(isoString)
+            
+            if (isNaN(start.getTime())) {
+              return 'N/A'
+            }
+            
+            const now = new Date()
+            const diffMs = now - start
+            
+            if (diffMs <= 0) {
+              return 'N/A'
+            }
+            
+            // 분 단위로 변환
+            const diffMinutes = diffMs / (1000 * 60)
+            
+            if (diffMinutes < 1) {
+              // 1분 미만이면 초당 요청 수로 표시
+              const diffSeconds = diffMs / 1000
+              const avgPerSecond = (stats.stats?.requests || 0) / diffSeconds
+              return `${avgPerSecond.toFixed(1)}/s`
+            }
+            
+            // 평균 요청 수/분 계산
+            const avgPerMinute = (stats.stats?.requests || 0) / diffMinutes
+            return avgPerMinute.toFixed(1)
+          }
+          
+          return 'N/A'
+        }
+        
         return (
           <>
             <div className="stats-main">
@@ -106,11 +153,15 @@ const StatsCard = ({ title, stats, type, value, unit, compact = false }) => {
             </div>
             <div className="stats-secondary">
               <div className="stats-item">
-                <span className="item-label">Avg/min:</span>
+                <span className="item-label">Last 5min:</span>
                 <span className="item-value">
-                  {stats.stats?.started_at 
-                    ? Math.round((stats.stats?.requests || 0) / 60)
-                    : 'N/A'}
+                  {last5minStats?.requests || 'N/A'}
+                </span>
+              </div>
+              <div className="stats-item">
+                <span className="item-label">Avg/sec:</span>
+                <span className="item-value">
+                  {last5minStats?.avg_throughput || 'N/A'}
                 </span>
               </div>
             </div>
@@ -131,16 +182,16 @@ const StatsCard = ({ title, stats, type, value, unit, compact = false }) => {
             </div>
             <div className="stats-secondary">
               <div className="stats-item">
+                <span className="item-label">Last 5min:</span>
+                <span className="item-value">{last5minStats?.errors || 'N/A'}</span>
+              </div>
+              <div className="stats-item">
                 <span className="item-label">Bad:</span>
                 <span className="item-value">{stats.stats?.bad_connections || 0}</span>
               </div>
               <div className="stats-item">
                 <span className="item-label">Denied:</span>
                 <span className="item-value">{stats.stats?.denied || 0}</span>
-              </div>
-              <div className="stats-item">
-                <span className="item-label">Refused:</span>
-                <span className="item-value">{stats.stats?.refused || 0}</span>
               </div>
               <div className="stats-item">
                 <span className="item-label">Error Rate:</span>

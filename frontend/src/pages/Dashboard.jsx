@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import StatusCard from '../components/StatusCard'
 import StatsCard from '../components/StatsCard'
 import SystemMetricsChart from '../components/SystemMetricsChart'
+import TinyproxyMetricsChart from '../components/TinyproxyMetricsChart'
 import './Dashboard.css'
 
 const Dashboard = () => {
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const [systemMetrics, setSystemMetrics] = useState(null)
   const [performanceMetrics, setPerformanceMetrics] = useState(null)
   const [systemHistory, setSystemHistory] = useState([])
+  const [last5minStats, setLast5minStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(null)
@@ -35,12 +37,13 @@ const Dashboard = () => {
       
       // 병렬로 모든 데이터 가져오기
       const headers = getAuthHeaders()
-      const [statusRes, statsRes, systemRes, perfRes, sysHistRes] = await Promise.allSettled([
+      const [statusRes, statsRes, systemRes, perfRes, sysHistRes, last5minRes] = await Promise.allSettled([
         fetch(`/api/process/status`, { headers }),
         fetch(`/api/stats/summary`, { headers }),
         fetch(`/api/system/metrics/current`, { headers }),
         fetch(`/api/performance/metrics/current`, { headers }),
-        fetch(`/api/system/metrics/history?seconds=300`, { headers })
+        fetch(`/api/system/metrics/history?seconds=300`, { headers }),
+        fetch(`/api/performance/metrics/last5min`, { headers })
       ])
 
       // 프로세스 상태
@@ -71,6 +74,12 @@ const Dashboard = () => {
       if (sysHistRes.status === 'fulfilled' && sysHistRes.value.ok) {
         const sysHistData = await sysHistRes.value.json()
         setSystemHistory(formatSystemHistory(sysHistData))
+      }
+
+      // 최근 5분 통계
+      if (last5minRes.status === 'fulfilled' && last5minRes.value.ok) {
+        const last5minData = await last5minRes.value.json()
+        setLast5minStats(last5minData)
       }
 
       setLastUpdate(new Date())
@@ -159,6 +168,7 @@ const Dashboard = () => {
               title="Connections"
               stats={stats}
               type="connections"
+              last5minStats={last5minStats}
               compact={false}
             />
           </div>
@@ -167,6 +177,8 @@ const Dashboard = () => {
               title="Requests"
               stats={stats}
               type="requests"
+              processStatus={processStatus}
+              last5minStats={last5minStats}
               compact={false}
             />
           </div>
@@ -175,12 +187,18 @@ const Dashboard = () => {
               title="Errors"
               stats={stats}
               type="errors"
+              last5minStats={last5minStats}
               compact={false}
             />
           </div>
         </div>
 
-        {/* 두 번째 줄: 시스템 메트릭과 차트 */}
+        {/* 두 번째 줄: Tinyproxy 메트릭 차트 */}
+        <div className="tinyproxy-metrics-row">
+          <TinyproxyMetricsChart title="Tinyproxy Performance Metrics (10 sec sampling, 5 min aggregation)" />
+        </div>
+
+        {/* 세 번째 줄: 시스템 메트릭과 차트 */}
         <div className="metrics-row">
           <div className="metrics-left">
             {systemMetrics && (

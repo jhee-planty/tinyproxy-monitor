@@ -13,7 +13,7 @@ from app.core.config import settings
 class PerformanceAnalyzer:
     """Tinyproxy 성능 메트릭 분석기"""
     
-    def __init__(self, buffer_size: int = 3600):
+    def __init__(self, buffer_size: int = 86400):  # 24시간 데이터 저장
         self.buffer_size = buffer_size
         self.metrics_buffer = deque(maxlen=buffer_size)
         self.response_times = deque(maxlen=1000)
@@ -22,38 +22,62 @@ class PerformanceAnalyzer:
         self._running = False
         
     def calculate_metrics(self, current_stats: Dict) -> Dict[str, Any]:
-        """성능 메트릭 계산"""
+        """성능 메트릭 계산 - 누적 통계에서 시간 단위 메트릭 계산"""
         current_time = datetime.now()
         metrics = {
             "timestamp": current_time.isoformat(),
             "raw_stats": current_stats
         }
         
+        # 현재 연결 수는 즉시 반영
+        metrics["active_connections"] = current_stats.get('opens', 0)
+        
         if self.last_stats and self.last_time:
             time_delta = (current_time - self.last_time).total_seconds()
             if time_delta > 0:
-                # 처리량 계산 (requests per second)
+                # 요청 수 델타 계산
                 requests_delta = current_stats.get('requests', 0) - self.last_stats.get('requests', 0)
+                
+                # 에러 델타 계산
+                bad_delta = current_stats.get('bad_connections', 0) - self.last_stats.get('bad_connections', 0)
+                denied_delta = current_stats.get('denied', 0) - self.last_stats.get('denied', 0)  
+                refused_delta = current_stats.get('refused', 0) - self.last_stats.get('refused', 0)
+                errors_delta = bad_delta + denied_delta + refused_delta
+                
+                # 처리량 계산 (requests per second)
                 throughput = requests_delta / time_delta if requests_delta >= 0 else 0
                 
-                # 에러율 계산
+                # 에러율 계산 - 해당 기간 동안의 에러율
+                if requests_delta > 0:
+                    period_error_rate = (errors_delta / requests_delta * 100) if errors_delta >= 0 else 0
+                else:
+                    period_error_rate = 0
+                
+                # 전체 누적 에러율
                 total_requests = current_stats.get('requests', 0)
                 total_errors = (
                     current_stats.get('bad_connections', 0) +
                     current_stats.get('denied', 0) +
                     current_stats.get('refused', 0)
                 )
-                error_rate = (total_errors / total_requests * 100) if total_requests > 0 else 0
+                cumulative_error_rate = (total_errors / total_requests * 100) if total_requests > 0 else 0
                 
                 metrics.update({
                     "throughput": round(throughput, 2),
-                    "error_rate": round(error_rate, 2),
-                    "active_connections": current_stats.get('opens', 0),
+                    "period_error_rate": round(period_error_rate, 2),  # 해당 기간 에러율
+                    "error_rate": round(cumulative_error_rate, 2),  # 전체 누적 에러율
+                    "requests_delta": max(0, requests_delta),  # 해당 기간 요청 수
+                    "errors_delta": max(0, errors_delta),  # 해당 기간 에러 수
+                    "time_delta": round(time_delta, 1),  # 수집 간격 (초)
                     "errors": {
                         "bad": current_stats.get('bad_connections', 0),
                         "denied": current_stats.get('denied', 0),
                         "refused": current_stats.get('refused', 0),
-                        "total": total_errors
+                        "total": total_errors,
+                        "bad_delta": max(0, bad_delta),
+                        "denied_delta": max(0, denied_delta),
+                        "refused_delta": max(0, refused_delta),
+                        "total_delta": max(0, errors_delta)
                     }
                 })
                 
