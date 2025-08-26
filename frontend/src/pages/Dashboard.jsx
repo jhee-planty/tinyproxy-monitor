@@ -55,8 +55,6 @@ const Dashboard = () => {
         setStats(statsData)
       }
 
-
-
       // 시스템 메트릭
       if (systemRes.status === 'fulfilled' && systemRes.value.ok) {
         const systemData = await systemRes.value.json()
@@ -74,8 +72,6 @@ const Dashboard = () => {
         const sysHistData = await sysHistRes.value.json()
         setSystemHistory(formatSystemHistory(sysHistData))
       }
-
-
 
       setLastUpdate(new Date())
       setLoading(false)
@@ -96,8 +92,6 @@ const Dashboard = () => {
       disk: item.disk?.percent || 0
     }))
   }
-
-
 
   // 초기 로드 및 자동 새로고침
   useEffect(() => {
@@ -165,7 +159,7 @@ const Dashboard = () => {
               title="Connections"
               stats={stats}
               type="connections"
-              compact={true}
+              compact={false}
             />
           </div>
           <div className="status-item">
@@ -173,7 +167,7 @@ const Dashboard = () => {
               title="Requests"
               stats={stats}
               type="requests"
-              compact={true}
+              compact={false}
             />
           </div>
           <div className="status-item">
@@ -181,7 +175,7 @@ const Dashboard = () => {
               title="Errors"
               stats={stats}
               type="errors"
-              compact={true}
+              compact={false}
             />
           </div>
         </div>

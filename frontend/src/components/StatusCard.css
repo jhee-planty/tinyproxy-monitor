@@ -1,9 +1,10 @@
 .status-card {
   background: white;
   border-radius: 8px;
-  padding: 20px;
+  padding: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   height: 100%;
+  width: 100%;
 }
 
 .status-card.compact {
