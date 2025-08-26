@@ -152,7 +152,7 @@ const Dashboard = () => {
         {/* 첫 번째 줄: 프로세스 상태와 주요 통계 */}
         <div className="status-row">
           <div className="status-item process-status">
-            <StatusCard status={processStatus} compact={true} />
+            <StatusCard status={processStatus} compact={false} />
           </div>
           <div className="status-item">
             <StatsCard 

@@ -19,18 +19,51 @@ const StatusCard = ({ status, compact = false }) => {
   const calculateUptime = () => {
     if (!status.started_at || !isRunning) return null
     
-    const start = new Date(status.started_at)
-    const now = new Date()
-    const diff = now - start
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    
-    if (hours > 24) {
-      const days = Math.floor(hours / 24)
-      return `${days}d ${hours % 24}h`
+    // systemd 시간 형식 파싱: "Tue 2025-08-26 14:14:45 KST"
+    // 월 이름을 숫자로 변환
+    const monthMap = {
+      'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+      'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
     }
-    return `${hours}h ${minutes}m`
+    
+    // 시간 문자열 파싱
+    const parts = status.started_at.split(' ')
+    if (parts.length >= 3) {
+      // "Tue 2025-08-26 14:14:45 KST" 형식 처리
+      const datePart = parts[1] // "2025-08-26"
+      const timePart = parts[2] // "14:14:45"
+      
+      // ISO 형식으로 변환
+      const isoString = `${datePart}T${timePart}`
+      const start = new Date(isoString)
+      
+      if (isNaN(start.getTime())) {
+        console.warn('Failed to parse start time:', status.started_at)
+        return null
+      }
+      
+      const now = new Date()
+      const diff = now - start
+      
+      if (diff < 0) {
+        return 'Just started'
+      }
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      
+      if (days > 0) {
+        return `${days}d ${hours}h ${minutes}m`
+      } else if (hours > 0) {
+        return `${hours}h ${minutes}m`
+      } else {
+        return `${minutes}m`
+      }
+    }
+    
+    return null
   }
 
   const uptime = calculateUptime()
