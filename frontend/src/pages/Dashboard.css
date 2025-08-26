@@ -77,19 +77,50 @@
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
 }
 
 .grid-item {
-  min-height: 150px;
+  min-height: auto;
+}
+
+.grid-item.metric-item {
+  /* 메트릭 카드를 더 작게 */
 }
 
 .grid-span-2 {
   grid-column: span 2;
 }
 
+.grid-span-3 {
+  grid-column: span 3;
+}
+
+.grid-span-4 {
+  grid-column: span 4;
+}
+
+.grid-span-full {
+  grid-column: 1 / -1;
+}
+
+/* 메트릭 카드 전용 그리드 */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  grid-column: 1 / -1;
+  margin-bottom: 15px;
+}
+
 /* 반응형 디자인 */
+@media (max-width: 1200px) {
+  .metrics-row {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard {
     padding: 15px;
@@ -104,8 +135,22 @@
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+  
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
 
-  .grid-span-2 {
+  .grid-span-2,
+  .grid-span-3,
+  .grid-span-4 {
     grid-column: span 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 }

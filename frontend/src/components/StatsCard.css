@@ -1,29 +1,58 @@
 .stats-card {
   background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
+/* 콤팩트 모드 - 시스템/성능 메트릭용 */
+.stats-card.compact {
+  padding: 10px;
+  min-height: 80px;
+}
+
 /* 시스템 메트릭 카드 스타일 */
 .stats-card.system-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+}
+
+.stats-card.system-card .stats-number {
+  color: #0369a1;
+}
+
+.stats-card.system-card h3 {
+  color: #075985;
 }
 
 /* 성능 메트릭 카드 스타일 */
 .stats-card.performance-card {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+}
+
+.stats-card.performance-card .stats-number {
+  color: #92400e;
+}
+
+.stats-card.performance-card h3 {
+  color: #78350f;
 }
 
 .stats-card h3 {
-  margin: 0 0 20px 0;
+  margin: 0 0 12px 0;
   color: #1f2937;
-  font-size: 18px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stats-card.compact h3 {
+  font-size: 12px;
+  margin-bottom: 8px;
+  opacity: 0.8;
 }
 
 .system-card h3,
@@ -43,11 +72,17 @@
 }
 
 .stats-number {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 600;
   color: #1f2937;
   line-height: 1;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+.stats-card.compact .stats-number {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .system-card .stats-number,
@@ -56,16 +91,26 @@
 }
 
 .stats-unit {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 400;
-  margin-left: 5px;
-  opacity: 0.8;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.stats-card.compact .stats-unit {
+  font-size: 12px;
+  margin-left: 2px;
 }
 
 .stats-label {
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+}
+
+.stats-card.compact .stats-label {
+  font-size: 11px;
+  display: none; /* 콤팩트 모드에서는 레이블 숨김 */
 }
 
 .stats-secondary {

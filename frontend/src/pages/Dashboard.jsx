@@ -177,12 +177,68 @@ const Dashboard = () => {
       )}
 
       <div className="dashboard-grid">
-        {/* 프로세스 상태 카드 */}
-        <div className="grid-item">
+        {/* 시스템 메트릭 컴팩트 카드 - 상단 배치 */}
+        <div className="metrics-row">
+          {systemMetrics && (
+            <>
+              <div className="metric-item">
+                <StatsCard 
+                  title="CPU"
+                  value={systemMetrics.cpu?.percent?.toFixed(1)}
+                  unit="%"
+                  type="system"
+                  compact={true}
+                />
+              </div>
+              <div className="metric-item">
+                <StatsCard 
+                  title="Memory"
+                  value={systemMetrics.memory?.percent?.toFixed(1)}
+                  unit="%"
+                  type="system"
+                  compact={true}
+                />
+              </div>
+              <div className="metric-item">
+                <StatsCard 
+                  title="Disk"
+                  value={systemMetrics.disk?.percent?.toFixed(1)}
+                  unit="%"
+                  type="system"
+                  compact={true}
+                />
+              </div>
+            </>
+          )}
+          {performanceMetrics && (
+            <>
+              <div className="metric-item">
+                <StatsCard 
+                  title="Throughput"
+                  value={performanceMetrics.throughput?.toFixed(1)}
+                  unit="req/s"
+                  type="performance"
+                  compact={true}
+                />
+              </div>
+              <div className="metric-item">
+                <StatsCard 
+                  title="P95 Latency"
+                  value={performanceMetrics.latency?.p95?.toFixed(0)}
+                  unit="ms"
+                  type="performance"
+                  compact={true}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* 주요 상태 카드들 - 중간 크기 */}
+        <div className="grid-item grid-span-2">
           <StatusCard status={processStatus} />
         </div>
 
-        {/* 통계 카드들 */}
         <div className="grid-item">
           <StatsCard 
             title="Connections"
@@ -207,61 +263,9 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* 시스템 메트릭 카드 - 새로 추가 */}
-        {systemMetrics && (
-          <>
-            <div className="grid-item">
-              <StatsCard 
-                title="CPU Usage"
-                value={systemMetrics.cpu?.percent?.toFixed(1)}
-                unit="%"
-                type="system"
-              />
-            </div>
-            <div className="grid-item">
-              <StatsCard 
-                title="Memory Usage"
-                value={systemMetrics.memory?.percent?.toFixed(1)}
-                unit="%"
-                type="system"
-              />
-            </div>
-            <div className="grid-item">
-              <StatsCard 
-                title="Disk Usage"
-                value={systemMetrics.disk?.percent?.toFixed(1)}
-                unit="%"
-                type="system"
-              />
-            </div>
-          </>
-        )}
-
-        {/* 성능 메트릭 카드 - 새로 추가 */}
-        {performanceMetrics && (
-          <>
-            <div className="grid-item">
-              <StatsCard 
-                title="Throughput"
-                value={performanceMetrics.throughput?.toFixed(1)}
-                unit="req/s"
-                type="performance"
-              />
-            </div>
-            <div className="grid-item">
-              <StatsCard 
-                title="P95 Latency"
-                value={performanceMetrics.latency?.p95?.toFixed(0)}
-                unit="ms"
-                type="performance"
-              />
-            </div>
-          </>
-        )}
-
-        {/* 차트 섹션 - 새로 추가 */}
+        {/* 차트 섹션 */}
         {systemHistory.length > 0 && (
-          <div className="grid-item grid-span-2">
+          <div className="grid-item grid-span-3">
             <SystemMetricsChart 
               data={systemHistory}
               title="System Resources (Last 5 min)"
@@ -270,7 +274,7 @@ const Dashboard = () => {
         )}
 
         {performanceHistory.length > 0 && (
-          <div className="grid-item grid-span-2">
+          <div className="grid-item grid-span-3">
             <PerformanceChart 
               data={performanceHistory}
               title="Performance Metrics (Last 5 min)"
@@ -279,7 +283,7 @@ const Dashboard = () => {
         )}
 
         {/* 최근 로그 */}
-        <div className="grid-item grid-span-2">
+        <div className="grid-item grid-span-full">
           <RecentLogs logs={recentLogs} />
         </div>
       </div>

@@ -1,11 +1,12 @@
 import React from 'react'
 import './StatsCard.css'
 
-const StatsCard = ({ title, stats, type, value, unit }) => {
+const StatsCard = ({ title, stats, type, value, unit, compact = false }) => {
   // 새로운 간단한 메트릭 카드 (시스템, 성능 메트릭용)
   if (type === 'system' || type === 'performance') {
+    const cardClass = `stats-card ${type}-card ${compact ? 'compact' : ''}`
     return (
-      <div className={`stats-card ${type}-card`}>
+      <div className={cardClass}>
         <h3>{title}</h3>
         <div className="stats-main">
           <div className="stats-number">
