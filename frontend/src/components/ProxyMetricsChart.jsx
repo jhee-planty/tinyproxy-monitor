@@ -208,4 +208,4 @@ function ProxyMetricsChart({ title = "Proxy Metrics" }) {
   );
 }
 
-export default TinyproxyMetricsChart;
+export default ProxyMetricsChart;
