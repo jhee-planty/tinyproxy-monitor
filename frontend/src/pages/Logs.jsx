@@ -31,8 +31,12 @@ const Logs = () => {
   const heartbeatIntervalRef = useRef(null)
   
   // 설정
-  // Vite 프록시를 위해 상대 경로 사용
-  const WS_URL = window.location.origin.replace('http://', 'ws://').replace('https://', 'wss://')
+  // WebSocket URL 설정
+  // Vite 프록시는 WebSocket에 제한이 있으므로 직접 백엔드로 연결
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://'
+  const wsHost = window.location.hostname
+  const wsPort = 8000  // 백엔드 포트
+  const WS_URL = `${wsProtocol}${wsHost}:${wsPort}`
   const MAX_LOGS = 1000
   const MAX_RECONNECT_ATTEMPTS = 5
   const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]
