@@ -65,11 +65,11 @@ async def get_log_tail(
     """
     
     # 로그 파일 존재 확인
-    log_path = Path(settings.TINYPROXY_LOG_PATH)
+    log_path = Path(settings.PROXY_LOG_PATH)
     if not log_path.exists():
         raise HTTPException(
             status_code=404, 
-            detail=f"Log file not found: {settings.TINYPROXY_LOG_PATH}"
+            detail=f"Log file not found: {settings.PROXY_LOG_PATH}"
         )
     
     try:

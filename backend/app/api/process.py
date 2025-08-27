@@ -6,7 +6,7 @@ from app.core.config import settings
 
 router = APIRouter(prefix="/api/process", tags=["process"])
 
-def run_systemctl_command(command: str, service: str = settings.TINYPROXY_SERVICE_NAME) -> tuple[int, str, str]:
+def run_systemctl_command(command: str, service: str = settings.PROXY_SERVICE_NAME) -> tuple[int, str, str]:
     """systemctl 명령 실행"""
     try:
         result = subprocess.run(
@@ -23,7 +23,7 @@ def run_systemctl_command(command: str, service: str = settings.TINYPROXY_SERVIC
     except Exception as e:
         return -1, "", str(e)
 
-def get_service_property(property_name: str, service: str = settings.TINYPROXY_SERVICE_NAME) -> Optional[str]:
+def get_service_property(property_name: str, service: str = settings.PROXY_SERVICE_NAME) -> Optional[str]:
     """systemd service 속성 가져오기"""
     try:
         result = subprocess.run(
@@ -71,7 +71,7 @@ async def get_process_status() -> Dict:
     is_running = (active_state == "active" and sub_state == "running" and pid > 0)
     
     response = {
-        "service": settings.TINYPROXY_SERVICE_NAME,
+        "service": settings.PROXY_SERVICE_NAME,
         "active_state": active_state or "unknown",
         "sub_state": sub_state or "unknown", 
         "load_state": load_state or "unknown",
@@ -155,7 +155,7 @@ async def get_unit_file_status() -> Dict:
     unit_file_state = get_service_property("UnitFileState")
     
     return {
-        "service": settings.TINYPROXY_SERVICE_NAME,
+        "service": settings.PROXY_SERVICE_NAME,
         "enabled": is_enabled == "enabled",
         "unit_file_state": unit_file_state or "unknown",
         "is_enabled_raw": is_enabled

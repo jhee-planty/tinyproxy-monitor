@@ -115,17 +115,17 @@ async def fetch_stats_page() -> str:
     """
     
     # URL 구성 (http:// 스키마 확인)
-    if not settings.TINYPROXY_STATS_HOST.startswith(('http://', 'https://')):
-        stats_url = f"http://{settings.TINYPROXY_STATS_HOST}/"
+    if not settings.PROXY_STATS_HOST.startswith(('http://', 'https://')):
+        stats_url = f"http://{settings.PROXY_STATS_HOST}/"
     else:
-        stats_url = f"{settings.TINYPROXY_STATS_HOST}/"
+        stats_url = f"{settings.PROXY_STATS_HOST}/"
     
     async with httpx.AsyncClient(timeout=settings.HTTP_REQUEST_TIMEOUT) as client:
         try:
             # Host 헤더를 통계 호스트명으로 설정
             response = await client.get(
                 stats_url,
-                headers={"Host": settings.TINYPROXY_STATS_HOSTNAME}
+                headers={"Host": settings.PROXY_STATS_HOSTNAME}
             )
             response.raise_for_status()
             return response.text
@@ -252,24 +252,24 @@ async def check_stats_availability() -> Dict:
         
         return {
             "available": is_stats_page,
-            "stats_host": settings.TINYPROXY_STATS_HOST,
-            "stats_hostname": settings.TINYPROXY_STATS_HOSTNAME,
+            "stats_host": settings.PROXY_STATS_HOST,
+            "stats_hostname": settings.PROXY_STATS_HOSTNAME,
             "validated_at": datetime.now().isoformat()
         }
         
     except HTTPException as e:
         return {
             "available": False,
-            "stats_host": settings.TINYPROXY_STATS_HOST,
-            "stats_hostname": settings.TINYPROXY_STATS_HOSTNAME,
+            "stats_host": settings.PROXY_STATS_HOST,
+            "stats_hostname": settings.PROXY_STATS_HOSTNAME,
             "error": e.detail,
             "validated_at": datetime.now().isoformat()
         }
     except Exception as e:
         return {
             "available": False,
-            "stats_host": settings.TINYPROXY_STATS_HOST,
-            "stats_hostname": settings.TINYPROXY_STATS_HOSTNAME,
+            "stats_host": settings.PROXY_STATS_HOST,
+            "stats_hostname": settings.PROXY_STATS_HOSTNAME,
             "error": str(e),
             "validated_at": datetime.now().isoformat()
         }
@@ -289,12 +289,12 @@ async def get_stats_metrics() -> Dict:
     stats = await get_stats()
     
     metrics = {
-        "tinyproxy_connections_open": stats["opens"],
-        "tinyproxy_requests_total": stats["requests"],
-        "tinyproxy_connections_bad_total": stats["bad_connections"],
-        "tinyproxy_connections_denied_total": stats["denied"],
-        "tinyproxy_connections_refused_total": stats["refused"],
-        "tinyproxy_errors_total": stats["bad_connections"] + stats["denied"] + stats["refused"]
+        "proxy_connections_open": stats["opens"],
+        "proxy_requests_total": stats["requests"],
+        "proxy_connections_bad_total": stats["bad_connections"],
+        "proxy_connections_denied_total": stats["denied"],
+        "proxy_connections_refused_total": stats["refused"],
+        "proxy_errors_total": stats["bad_connections"] + stats["denied"] + stats["refused"]
     }
     
     return {

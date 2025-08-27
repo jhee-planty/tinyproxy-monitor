@@ -22,7 +22,7 @@ LOG_LEVEL_PRIORITY = {
 }
 
 # 전역 LogStreamManager 인스턴스
-log_manager = LogStreamManager(settings.TINYPROXY_LOG_PATH, settings.WS_MAX_MEMORY_PERCENT)
+log_manager = LogStreamManager(settings.PROXY_LOG_PATH, settings.WS_MAX_MEMORY_PERCENT)
 
 def filter_logs(logs: List[Dict], level: str = "CONNECT", search: Optional[str] = None) -> List[Dict]:
     """
@@ -413,6 +413,6 @@ async def get_websocket_status():
     return {
         "connected": log_manager.active_connection is not None,
         "buffer_info": log_manager.get_buffer_info(),
-        "log_file": str(settings.TINYPROXY_LOG_PATH),
-        "file_exists": Path(settings.TINYPROXY_LOG_PATH).exists()
+        "log_file": str(settings.PROXY_LOG_PATH),
+        "file_exists": Path(settings.PROXY_LOG_PATH).exists()
     }

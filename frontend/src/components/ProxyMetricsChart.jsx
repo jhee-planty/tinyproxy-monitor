@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import './TinyproxyMetricsChart.css';
+import './ProxyMetricsChart.css';
 
-function TinyproxyMetricsChart({ title = "Proxy Metrics" }) {
+function ProxyMetricsChart({ title = "Proxy Metrics" }) {
   const [data, setData] = useState([]);
   const [timeRange, setTimeRange] = useState(1); // 기본 1시간
   const [loading, setLoading] = useState(false);

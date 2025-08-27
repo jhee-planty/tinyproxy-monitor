@@ -23,9 +23,9 @@ async def lifespan(app: FastAPI):
     """애플리케이션 생명주기 관리"""
     # Startup
     print(f"Starting application...")
-    print(f"Log path: {settings.TINYPROXY_LOG_PATH}")
-    print(f"PID path: {settings.TINYPROXY_PID_PATH}") 
-    print(f"Stats host: {settings.TINYPROXY_STATS_HOST}")
+    print(f"Log path: {settings.PROXY_LOG_PATH}")
+    print(f"PID path: {settings.PROXY_PID_PATH}") 
+    print(f"Stats host: {settings.PROXY_STATS_HOST}")
     print(f"Auth disabled: {settings.DISABLE_AUTH}")
     print(f"Blocked users: {settings.BLOCKED_USERS}")
     
@@ -124,7 +124,7 @@ async def health_check():
         "status": "healthy",
         "checks": {
             "api": True,
-            "tinyproxy_stats": False,
+            "proxy_stats": False,
             "log_file": False,
             "pid_file": False
         }
@@ -134,17 +134,17 @@ async def health_check():
     try:
         from app.api.stats import check_stats_availability
         stats_check = await check_stats_availability()
-        health_status["checks"]["tinyproxy_stats"] = stats_check.get("available", False)
+        health_status["checks"]["proxy_stats"] = stats_check.get("available", False)
     except:
         pass
     
     # 로그 파일 확인
     from pathlib import Path
-    if Path(settings.TINYPROXY_LOG_PATH).exists():
+    if Path(settings.PROXY_LOG_PATH).exists():
         health_status["checks"]["log_file"] = True
     
     # PID 파일 확인
-    if Path(settings.TINYPROXY_PID_PATH).exists():
+    if Path(settings.PROXY_PID_PATH).exists():
         health_status["checks"]["pid_file"] = True
     
     # 전체 상태 결정

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import StatusCard from '../components/StatusCard'
 import StatsCard from '../components/StatsCard'
 import SystemMetricsChart from '../components/SystemMetricsChart'
-import TinyproxyMetricsChart from '../components/TinyproxyMetricsChart'
+import ProxyMetricsChart from '../components/ProxyMetricsChart'
 import './Dashboard.css'
 
 const Dashboard = () => {
@@ -195,7 +195,7 @@ const Dashboard = () => {
 
         {/* 두 번째 줄: Proxy 메트릭 차트 */}
         <div className="proxy-metrics-row">
-          <TinyproxyMetricsChart title="Proxy Performance Metrics (10 sec sampling, 5 min aggregation)" />
+          <ProxyMetricsChart title="Proxy Performance Metrics (10 sec sampling, 5 min aggregation)" />
         </div       {/* 세 번째 줄: 시스템 메트릭과 차트 */}
         <div className="metrics-row">
           <div className="metrics-left">

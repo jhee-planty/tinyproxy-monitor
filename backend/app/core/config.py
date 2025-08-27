@@ -116,10 +116,10 @@ class Settings:
         - 경로별 존재 여부 딕셔너리
         """
         return {
-            "log_file": Path(cls.TINYPROXY_LOG_PATH).exists(),
-            "pid_file": Path(cls.TINYPROXY_PID_PATH).exists(),
-            "log_dir": Path(cls.TINYPROXY_LOG_PATH).parent.exists(),
-            "pid_dir": Path(cls.TINYPROXY_PID_PATH).parent.exists()
+            "log_file": Path(cls.PROXY_LOG_PATH).exists(),
+            "pid_file": Path(cls.PROXY_PID_PATH).exists(),
+            "log_dir": Path(cls.PROXY_LOG_PATH).parent.exists(),
+            "pid_dir": Path(cls.PROXY_PID_PATH).parent.exists()
         }
     
     @classmethod
@@ -132,11 +132,11 @@ class Settings:
         """
         return {
             "proxy": {
-                "log_path": cls.TINYPROXY_LOG_PATH,
-                "pid_path": cls.TINYPROXY_PID_PATH,
-                "stats_host": cls.TINYPROXY_STATS_HOST,
-                "stats_hostname": cls.TINYPROXY_STATS_HOSTNAME,
-                "service_name": cls.TINYPROXY_SERVICE_NAME
+                "log_path": cls.PROXY_LOG_PATH,
+                "pid_path": cls.PROXY_PID_PATH,
+                "stats_host": cls.PROXY_STATS_HOST,
+                "stats_hostname": cls.PROXY_STATS_HOSTNAME,
+                "service_name": cls.PROXY_SERVICE_NAME
             },
             "api": {
                 "host": cls.API_HOST,
