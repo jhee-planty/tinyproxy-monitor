@@ -4,10 +4,20 @@
 from fastapi import APIRouter, Query
 from typing import Dict, Any, List
 import psutil
+import socket
 from datetime import datetime
 from app.core.system_metrics import system_collector
 
 router = APIRouter(prefix="/api/system", tags=["system"])
+
+
+@router.get("/info")
+async def get_system_info() -> Dict[str, str]:
+    """시스템 기본 정보 조회"""
+    return {
+        "hostname": socket.gethostname(),
+        "fqdn": socket.getfqdn()
+    }
 
 
 @router.get("/metrics/current")

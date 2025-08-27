@@ -17,14 +17,16 @@ class LogFileHandler(FileSystemEventHandler):
     로그 파일 변경 감지 핸들러
     """
     
-    def __init__(self, file_path: str, callback: Callable):
+    def __init__(self, file_path: str, callback: Callable, loop=None):
         """
         Parameters:
         - file_path: 모니터링할 로그 파일 경로
         - callback: 파일 변경 시 호출할 콜백 함수
+        - loop: asyncio 이벤트 루프
         """
         self.file_path = Path(file_path)
         self.callback = callback
+        self.loop = loop
         self.last_position = 0
         
         # 초기 파일 크기 저장
@@ -40,8 +42,9 @@ class LogFileHandler(FileSystemEventHandler):
             return
         
         # 콜백 함수 호출
-        if self.callback:
-            asyncio.create_task(self.callback())
+        if self.callback and self.loop:
+            # 이벤트 루프에 태스크 예약
+            asyncio.run_coroutine_threadsafe(self.callback(), self.loop)
 
 class LogStreamManager:
     """
@@ -134,10 +137,19 @@ class LogStreamManager:
         if self.observer is not None:
             return
         
+        # 현재 이벤트 루프 가져오기
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # 이벤트 루프가 없으면 모니터링 불가
+            print("Warning: No event loop found for file monitoring")
+            return
+        
         self.observer = Observer()
         self.file_handler = LogFileHandler(
             str(self.log_file_path),
-            self._on_file_changed
+            self._on_file_changed,
+            loop=loop  # 이벤트 루프 전달
         )
         
         # 디렉토리 모니터링 (파일이 포함된 디렉토리)

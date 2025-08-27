@@ -17,12 +17,12 @@ class Settings:
     # Proxy 관련 설정
     PROXY_LOG_PATH: str = os.getenv(
         "PROXY_LOG_PATH",
-        "/var/log/proxy/tinyproxy.log"
+        "/var/log/tinyproxy/tinyproxy.log"
     )
     
     PROXY_PID_PATH: str = os.getenv(
         "PROXY_PID_PATH",
-        "/var/run/proxy/tinyproxy.pid"
+        "/var/run/tinyproxy/tinyproxy.pid"
     )
     
     PROXY_STATS_HOST: str = os.getenv(

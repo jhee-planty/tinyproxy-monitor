@@ -32,11 +32,14 @@ const Logs = () => {
   
   // 설정
   // WebSocket URL 설정
-  // Vite 프록시는 WebSocket에 제한이 있으므로 직접 백엔드로 연결
-  const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://'
-  const wsHost = window.location.hostname
-  const wsPort = 8000  // 백엔드 포트
-  const WS_URL = `${wsProtocol}${wsHost}:${wsPort}`
+  // 브라우저가 접속한 호스트를 사용하고, 백엔드 포트로 연결
+  const getWebSocketURL = () => {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://'
+    const wsHost = window.location.hostname  // 브라우저가 접속한 호스트 사용
+    const wsPort = 8000  // 백엔드 포트
+    return `${wsProtocol}${wsHost}:${wsPort}`
+  }
+  const WS_URL = getWebSocketURL()
   const MAX_LOGS = 1000
   const MAX_RECONNECT_ATTEMPTS = 5
   const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]
@@ -170,7 +173,9 @@ const Logs = () => {
         wsRef.current.close()
       }
       
-      const ws = new WebSocket(`${WS_URL}/api/ws/logs`)
+      const wsUrl = `${WS_URL}/api/ws/logs`
+      console.log('Attempting WebSocket connection to:', wsUrl)
+      const ws = new WebSocket(wsUrl)
       wsRef.current = ws
       
       ws.onopen = () => {

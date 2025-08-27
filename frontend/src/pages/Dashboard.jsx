@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [performanceMetrics, setPerformanceMetrics] = useState(null)
   const [systemHistory, setSystemHistory] = useState([])
   const [last5minStats, setLast5minStats] = useState(null)
+  const [systemInfo, setSystemInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(null)
@@ -37,13 +38,14 @@ const Dashboard = () => {
       
       // 병렬로 모든 데이터 가져오기
       const headers = getAuthHeaders()
-      const [statusRes, statsRes, systemRes, perfRes, sysHistRes, last5minRes] = await Promise.allSettled([
+      const [statusRes, statsRes, systemRes, perfRes, sysHistRes, last5minRes, sysInfoRes] = await Promise.allSettled([
         fetch(`/api/process/status`, { headers }),
         fetch(`/api/stats/summary`, { headers }),
         fetch(`/api/system/metrics/current`, { headers }),
         fetch(`/api/performance/metrics/current`, { headers }),
         fetch(`/api/system/metrics/history?seconds=300`, { headers }),
-        fetch(`/api/performance/metrics/last5min`, { headers })
+        fetch(`/api/performance/metrics/last5min`, { headers }),
+        fetch(`/api/system/info`, { headers })
       ])
 
       // 프로세스 상태
@@ -80,6 +82,12 @@ const Dashboard = () => {
       if (last5minRes.status === 'fulfilled' && last5minRes.value.ok) {
         const last5minData = await last5minRes.value.json()
         setLast5minStats(last5minData)
+      }
+
+      // 시스템 정보
+      if (sysInfoRes.status === 'fulfilled' && sysInfoRes.value.ok) {
+        const sysInfoData = await sysInfoRes.value.json()
+        setSystemInfo(sysInfoData)
       }
 
       setLastUpdate(new Date())
@@ -130,7 +138,19 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h2>System Overview</h2>
+        <h2>
+          System Overview
+          {systemInfo && (
+            <span className="hostname" style={{ 
+              fontSize: '0.7em', 
+              color: '#888', 
+              marginLeft: '10px',
+              fontWeight: 'normal'
+            }}>
+              ({systemInfo.hostname})
+            </span>
+          )}
+        </h2>
         <div className="header-actions">
           <button 
             onClick={handleRefresh} 
