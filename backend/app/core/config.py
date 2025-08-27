@@ -17,12 +17,12 @@ class Settings:
     # Proxy 관련 설정
     PROXY_LOG_PATH: str = os.getenv(
         "PROXY_LOG_PATH",
-        "/var/log/proxy/proxy.log"
+        "/var/log/proxy/tinyproxy.log"
     )
     
     PROXY_PID_PATH: str = os.getenv(
         "PROXY_PID_PATH",
-        "/var/run/proxy/proxy.pid"
+        "/var/run/proxy/tinyproxy.pid"
     )
     
     PROXY_STATS_HOST: str = os.getenv(
@@ -32,13 +32,13 @@ class Settings:
     
     PROXY_STATS_HOSTNAME: str = os.getenv(
         "PROXY_STATS_HOSTNAME",
-        "proxy.stats"
+        "tinyproxy.stats"
     )
     
     # Systemd 서비스 설정
     PROXY_SERVICE_NAME: str = os.getenv(
         "PROXY_SERVICE_NAME",
-        "proxy"
+        "tinyproxy"
     )
     
     # API 서버 설정
@@ -48,7 +48,7 @@ class Settings:
     # CORS 설정
     CORS_ORIGINS: list = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:5173,http://localhost:3000"
+        "http://localhost:5173,http://localhost:3000 "
     ).split(",")
     
     # WebSocket 설정
