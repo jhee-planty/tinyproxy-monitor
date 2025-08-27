@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/logs", tags=["logs"])
 
 # 로그 레벨 패턴
 LOG_PATTERN = re.compile(
-    r'(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+\[(\d+)\]:\s+(\w+):\s+(.*)'
+    r'(\w+)\s+(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\.\d{3})\s+\[(\d+)\]:\s+(.*)'
 )
 
 def parse_log_line(line: str) -> Optional[Dict]:
@@ -17,29 +17,29 @@ def parse_log_line(line: str) -> Optional[Dict]:
     line = line.strip()
     if not line:
         return None
-    
+
     match = LOG_PATTERN.match(line)
     if match:
-        timestamp_str, pid, level, message = match.groups()
-        
+        level, timestamp_str, pid, message = match.groups()
+
         # 현재 연도 추가 (proxy 로그는 연도 정보가 없음)
         current_year = datetime.now().year
         try:
-            # 월 일 시:분:초 형식을 파싱
+            # 월 일 시:분:초.밀리초 형식을 파싱
             timestamp = datetime.strptime(
-                f"{current_year} {timestamp_str}", 
-                "%Y %b %d %H:%M:%S"
+                f"{current_year} {timestamp_str}",
+                "%Y %b %d %H:%M:%S.%f"
             )
         except ValueError:
             timestamp = datetime.now()
-        
+
         return {
             "timestamp": timestamp.isoformat(),
             "pid": int(pid),
             "level": level.upper(),
             "message": message
         }
-    
+
     # 패턴에 맞지 않는 경우 원본 반환
     return {
         "timestamp": datetime.now().isoformat(),

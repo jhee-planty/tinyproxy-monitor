@@ -36,22 +36,16 @@ class LinuxAuthenticator:
         Returns:
             인증 성공 여부
         """
-        print(f"[PAM AUTH] Starting authentication for user: {username}")
         try:
             # root 및 차단된 사용자 체크
             if username in settings.BLOCKED_USERS:
-                print(f"[PAM AUTH] User {username} is in blocked list")
                 return False
             
             # PAM 인증
-            print(f"[PAM AUTH] Attempting PAM authentication")
             result = self.pam.authenticate(username, password)
-            print(f"[PAM AUTH] PAM authentication result: {result}")
             return result
         except Exception as e:
-            print(f"[PAM AUTH] PAM authentication error: {e}")
             import traceback
-            print(f"[PAM AUTH] Traceback: {traceback.format_exc()}")
             return False
     
     def get_user_info(self, username: str) -> Optional[Dict[str, Any]]:
@@ -64,11 +58,9 @@ class LinuxAuthenticator:
         Returns:
             사용자 정보 딕셔너리 또는 None
         """
-        print(f"[PAM AUTH] Getting user info for: {username}")
         try:
             # getpwnam으로 사용자 정보 조회
             user_info = pwd.getpwnam(username)
-            print(f"[PAM AUTH] User info found: uid={user_info.pw_uid}, gid={user_info.pw_gid}")
             
             # 사용자 그룹 정보 조회
             groups = [g.gr_name for g in grp.getgrall() if username in g.gr_mem]
@@ -85,15 +77,11 @@ class LinuxAuthenticator:
                 "groups": groups,
                 "is_admin": "wheel" in groups or "sudo" in groups or "admin" in groups
             }
-            print(f"[PAM AUTH] User info compiled: {result}")
             return result
         except KeyError:
-            print(f"[PAM AUTH] User {username} not found in system")
             return None
         except Exception as e:
-            print(f"[PAM AUTH] Error getting user info: {e}")
             import traceback
-            print(f"[PAM AUTH] Traceback: {traceback.format_exc()}")
             return None
 
 
