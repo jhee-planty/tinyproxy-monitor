@@ -196,7 +196,9 @@ const Dashboard = () => {
         {/* 두 번째 줄: Proxy 메트릭 차트 */}
         <div className="proxy-metrics-row">
           <ProxyMetricsChart title="Proxy Performance Metrics (10 sec sampling, 5 min aggregation)" />
-        </div       {/* 세 번째 줄: 시스템 메트릭과 차트 */}
+        </div>
+
+        {/* 세 번째 줄: 시스템 메트릭과 차트 */}
         <div className="metrics-row">
           <div className="metrics-left">
             {systemMetrics && (
