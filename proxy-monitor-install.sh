@@ -708,6 +708,7 @@ main() {
     install_backend
     install_frontend
     create_configuration
+    create_backend_log_info
     create_systemd_service
     configure_nginx
     #configure_selinux
