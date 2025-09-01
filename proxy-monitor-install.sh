@@ -79,7 +79,7 @@ extract_package() {
     PACKAGE_PATH=$(ls ${PACKAGE_FILE} | head -n 1)
     tar xzf "${PACKAGE_PATH}" -C "${EXTRACT_DIR}" --strip-components=1
     
-    if [ ! -d "${EXTRACT_DIR}/packages" ]; then
+    if [ ! -d "${EXTRACT_DIR}" ]; then
         log_error "Invalid package structure"
         exit 1
     fi
@@ -94,8 +94,8 @@ install_nginx_if_needed() {
     if [ "${INSTALL_NGINX}" = "true" ]; then
         log_info "Installing Nginx from RPM packages..."
         
-        if [ -d "${EXTRACT_DIR}/packages/rpms" ]; then
-            cd "${EXTRACT_DIR}/packages/rpms"
+        if [ -d "${EXTRACT_DIR}/rpms" ]; then
+            cd "${EXTRACT_DIR}/rpms"
             
             # 의존성 순서대로 설치
             for rpm in pcre2-*.rpm openssl-libs-*.rpm nginx-filesystem-*.rpm nginx-*.rpm; do
@@ -153,7 +153,7 @@ create_user_and_directories() {
 install_backend() {
     log_info "Installing backend..."
     
-    cd "${EXTRACT_DIR}/packages"
+    cd "${EXTRACT_DIR}"
     
     # Python 가상환경 생성
     log_info "Creating Python virtual environment..."
@@ -206,7 +206,7 @@ install_backend() {
 install_frontend() {
     log_info "Installing frontend..."
     
-    cd "${EXTRACT_DIR}/packages"
+    cd "${EXTRACT_DIR}"
     
     # Frontend 파일 압축 해제
     tar xzf frontend-dist.tar.gz -C "${FRONTEND_DIR}/"
