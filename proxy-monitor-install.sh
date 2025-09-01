@@ -24,14 +24,14 @@ log_prompt() { echo -e "${BLUE}[INPUT]${NC} $1"; }
 # 설정 변수
 # ============================================
 APP_NAME="tinyproxy-monitor"
-APP_USER="tinyproxy-monitor"
-APP_GROUP="tinyproxy-monitor"
+APP_USER="root"
+APP_GROUP="root"
 BASE_DIR="/opt/${APP_NAME}"
 BACKEND_DIR="${BASE_DIR}/backend"
 VENV_DIR="${BACKEND_DIR}/venv"
 FRONTEND_DIR="/usr/share/nginx/html/${APP_NAME}"
 LOG_DIR="/var/log/${APP_NAME}"
-RUN_DIR="/var/run/${APP_NAME}"
+RUN_DIR="/var/run"
 CONFIG_DIR="/etc/${APP_NAME}"
 
 # 패키지 파일
@@ -272,22 +272,6 @@ EOF
     chown "${APP_USER}:${APP_GROUP}" "${BACKEND_DIR}/.env"
     chmod 600 "${BACKEND_DIR}/.env"
     
-    # 관리자 정보 저장
-    cat > "${CONFIG_DIR}/admin.info" << EOF
-========================================
-Tinyproxy Monitor Admin Credentials
-========================================
-URL: http://$(hostname -I | awk '{print $1}')/
-Username: admin
-Password: ${ADMIN_PASSWORD}
-========================================
-Generated: $(date)
-========================================
-EOF
-    
-    chmod 600 "${CONFIG_DIR}/admin.info"
-    
-    log_warn "Admin credentials saved to: ${CONFIG_DIR}/admin.info"
 }
 
 # ============================================
@@ -388,7 +372,7 @@ IPAddressAllow=127.0.0.1/8 ::1/128
 IPAddressDeny=any
 
 # 쓰기 가능 경로
-ReadWritePaths=${LOG_DIR} ${RUN_DIR} ${BACKEND_DIR} /var/log/tinyproxy /var/run/tinyproxy
+ReadWritePaths=${LOG_DIR} ${RUN_DIR} ${BACKEND_DIR} /var/log/tinyproxy
 
 [Install]
 WantedBy=multi-user.target
