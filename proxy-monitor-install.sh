@@ -50,12 +50,6 @@ check_prerequisites() {
         exit 1
     fi
     
-    # 패키지 파일 확인
-    if ! ls ${PACKAGE_FILE} 1> /dev/null 2>&1; then
-        log_error "Package file not found: ${PACKAGE_FILE}"
-        exit 1
-    fi
-    
     # Python 버전 확인
     if ! python3 --version | grep -E "3\.(9|1[0-9])" > /dev/null; then
         log_error "Python 3.9+ is required"
@@ -241,7 +235,7 @@ create_configuration() {
 
 # Tinyproxy 경로
 PROXY_LOG_PATH=/var/log/tinyproxy/tinyproxy.log
-PROXY_PID_PATH=/var/run/tinyproxy/tinyproxy.pid
+PROXY_PID_PATH=/var/run/tinyproxy.pid
 PROXY_STATS_HOST=localhost:3128
 PROXY_STATS_HOSTNAME=tinyproxy.stats
 PROXY_SERVICE_NAME=tinyproxy
@@ -297,12 +291,51 @@ EOF
 }
 
 # ============================================
-# 8. Systemd 서비스 생성
+# 8. backend 로그 설정 파일 생성
+# ============================================
+create_backend_log_info() {
+    log_info "Creating backend log info file..."
+
+    cat > "${BACKEND_DIR}/app/logging_config.ini" << EOF
+[loggers]
+keys=root
+
+[handlers]
+keys=console,timedFile
+
+[formatters]
+keys=generic
+
+[logger_root]
+level=INFO
+handlers=console,timedFile
+
+[handler_console]
+class=StreamHandler
+level=INFO
+formatter=generic
+args=(sys.stderr,)
+
+[handler_timedFile]
+class=logging.handlers.TimedRotatingFileHandler
+level=INFO
+formatter=generic
+args=('${LOG_DIR}/backend.log', 'midnight', 1, 365, 'utf-8')
+
+[formatter_generic]
+format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+EOF
+
+}
+
+# ============================================
+# 9. Systemd 서비스 생성
 # ============================================
 create_systemd_service() {
     log_info "Creating systemd service..."
     
-    cat > "/etc/systemd/system/${APP_NAME}.service" << EOF
+    cat > "/lib/systemd/system/${APP_NAME}.service" << EOF
 [Unit]
 Description=Tinyproxy Monitor Backend API
 After=network.target tinyproxy.service
@@ -325,7 +358,8 @@ ExecStart=${VENV_DIR}/bin/uvicorn app.main:app \\
     --port 8000 \\
     --workers 1 \\
     --log-level info \\
-    --access-log
+    --access-log \\
+    --log-config ${BACKEND_DIR}/app/logging_config.ini
 
 # 재시작 정책
 Restart=always
@@ -358,6 +392,7 @@ ReadWritePaths=${LOG_DIR} ${RUN_DIR} ${BACKEND_DIR} /var/log/tinyproxy /var/run/
 
 [Install]
 WantedBy=multi-user.target
+
 EOF
     
     systemctl daemon-reload
@@ -367,7 +402,7 @@ EOF
 }
 
 # ============================================
-# 9. Nginx 설정
+# 10. Nginx 설정
 # ============================================
 configure_nginx() {
     log_info "Configuring Nginx..."
@@ -484,7 +519,7 @@ EOF
 }
 
 # ============================================
-# 10. SELinux 설정 (RHEL/Rocky Linux)
+# 11. SELinux 설정 (RHEL/Rocky Linux)
 # ============================================
 configure_selinux() {
     if command -v getenforce &> /dev/null && [ "$(getenforce)" != "Disabled" ]; then
@@ -506,7 +541,7 @@ configure_selinux() {
 }
 
 # ============================================
-# 11. 로그 로테이션 설정
+# 12. 로그 로테이션 설정
 # ============================================
 configure_log_rotation() {
     log_info "Configuring log rotation..."
@@ -522,7 +557,7 @@ ${LOG_DIR}/*.log {
     create 0640 ${APP_USER} ${APP_GROUP}
     sharedscripts
     postrotate
-        systemctl reload ${APP_NAME} >/dev/null 2>&1 || true
+        systemctl restart ${APP_NAME} >/dev/null 2>&1 || true
     endscript
 }
 
@@ -545,7 +580,7 @@ EOF
 }
 
 # ============================================
-# 12. Tinyproxy 로그 접근 권한 설정
+# 13. Tinyproxy 로그 접근 권한 설정
 # ============================================
 configure_tinyproxy_access() {
     log_info "Configuring Tinyproxy log access..."
@@ -565,7 +600,7 @@ configure_tinyproxy_access() {
 }
 
 # ============================================
-# 13. 서비스 시작
+# 14. 서비스 시작
 # ============================================
 start_services() {
     log_info "Starting services..."
@@ -593,7 +628,7 @@ start_services() {
 }
 
 # ============================================
-# 14. 설치 검증
+# 15. 설치 검증
 # ============================================
 verify_installation() {
     log_info "Verifying installation..."
@@ -630,7 +665,7 @@ verify_installation() {
 }
 
 # ============================================
-# 15. 설치 완료 메시지
+# 16. 설치 완료 메시지
 # ============================================
 print_completion_message() {
     local SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -665,7 +700,7 @@ print_completion_message() {
 }
 
 # ============================================
-# 16. 정리 작업
+# 17. 정리 작업
 # ============================================
 cleanup() {
     log_info "Cleaning up temporary files..."

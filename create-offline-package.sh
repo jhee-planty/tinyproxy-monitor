@@ -504,8 +504,8 @@ EOF
 copy_install_script() {
     log_info "Copying installation script..."
     
-    cp "${PROJECT_DIR}/proxy-monitor-install.sh" "${OUTPUT_DIR}/"
-    chmod +x "${OUTPUT_DIR}/proxy-monitor-install.sh"
+    cp "${PROJECT_DIR}/proxy-monitor-install.sh" "${BUILD_DIR}/"
+    chmod +x "${BUILD_DIR}/proxy-monitor-install.sh"
     
     log_info "Installation script copied: proxy-monitor-install.sh"
 }
