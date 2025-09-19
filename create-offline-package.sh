@@ -190,26 +190,6 @@ tinyproxy-monitor
 MIT License - see LICENSE file for details.
 EOF
 
-    # run_server 함수 추가 (console script용)
-    if ! grep -q "def run_server" app/main.py; then
-        echo "" >> app/main.py
-        cat >> app/main.py << 'EOF'
-
-def run_server():
-    """Entry point for console script"""
-    import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=False
-    )
-
-if __name__ == "__main__":
-    run_server()
-EOF
-    fi
-    
     # 가상환경 생성 및 build 도구 설치
     python3 -m venv build_env
     source build_env/bin/activate
