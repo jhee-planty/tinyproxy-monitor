@@ -101,25 +101,20 @@ class LogStreamManager:
         return max(1000, min(max_lines, 1000000))
     
     async def connect(self, websocket):
-        """
-        WebSocket 연결 설정
-        단일 연결만 허용 (기존 연결은 종료)
-        
-        Parameters:
-        - websocket: FastAPI WebSocket 객체
-        
-        Returns:
-        - bool: 연결 성공 여부
-        """
         async with self.connection_lock:
-            # 기존 연결이 있으면 종료
+            # 기존 연결이 있으면 새 연결 거부
             if self.active_connection is not None:
+                # 연결이 살아있는지 확인
                 try:
-                    await self.active_connection.close()
+                    # ping으로 확인
+                    await self.active_connection.ping()
+                    # 살아있으면 거부
+                    await websocket.close(code=1008, reason="Another connection is active")
+                    return False
                 except:
-                    pass  # 이미 닫혀있을 수 있음
-                self.active_connection = None
-                self.stop_monitoring()
+                    # 죽어있으면 정리하고 새 연결 허용
+                    self.active_connection = None
+                    self.stop_monitoring()
             
             # 새 연결 설정
             self.active_connection = websocket
