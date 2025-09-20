@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================
 # Tinyproxy Monitor 오프라인 설치 스크립트
-# Backend: systemd 서비스 (localhost only)
+# Backend: systemd 서비스
 # Frontend: Nginx 서빙
 # ============================================
 
@@ -84,7 +84,7 @@ extract_package() {
 # ============================================
 # 3. Nginx 설치 (필요시)
 # ============================================
-install_rpms_if_needed() {  # 함수명 변경
+install_rpms_if_needed() {
     log_info "Installing required RPM packages..."
     
     if [ -d "${EXTRACT_DIR}/rpms" ]; then
@@ -148,7 +148,7 @@ create_user_and_directories() {
 }
 
 # ============================================
-# 5. Backend 설치
+# 5. Backend 설치 (wheel만 사용)
 # ============================================
 install_backend() {
     log_info "Installing backend..."
@@ -165,6 +165,7 @@ install_backend() {
     # pip 업그레이드
     log_info "Upgrading pip and build tools..."
     sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install \
+        --force-reinstall \
         --no-index \
         --find-links python-deps/ \
         pip setuptools wheel build
@@ -172,6 +173,7 @@ install_backend() {
     # 의존성 설치
     log_info "Installing Python dependencies..."
     sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install \
+        --force-reinstall \
         --no-index \
         --find-links python-deps/ \
         fastapi uvicorn[standard] psutil python-dotenv \
@@ -179,24 +181,35 @@ install_backend() {
         watchdog python-jose[cryptography] python-multipart \
         passlib[bcrypt] python-pam gunicorn
     
-    # Backend 패키지 설치
-    log_info "Installing backend package..."
+    # Backend 패키지 설치 (wheel만 사용)
+    log_info "Installing backend package from wheel..."
     WHEEL_FILE=$(ls tinyproxy_monitor-*.whl | head -n 1)
     sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install \
+        --force-reinstall \
         --no-index \
-        --find-links . \
+        --find-links python-deps \
         "${WHEEL_FILE}"
-    
-    # app 디렉토리 복사 (wheel에 포함되지 않은 경우를 위해)
-    if [ ! -d "${BACKEND_DIR}/app" ]; then
-        # wheel에서 설치된 위치 찾기
-        SITE_PACKAGES="${VENV_DIR}/lib/python*/site-packages"
-        if [ -d ${SITE_PACKAGES}/app ]; then
-            cp -r ${SITE_PACKAGES}/app "${BACKEND_DIR}/"
-            chown -R "${APP_USER}:${APP_GROUP}" "${BACKEND_DIR}/app"
-        fi
+
+    # app 디렉토리 교체
+    if [ -d "${BACKEND_DIR}/app" ]; then
+        rm -rf "${BACKEND_DIR}/app"
     fi
     
+    log_info "Copying app directory from site-packages..."
+    # wheel에서 설치된 위치 찾기 - glob 패턴 올바르게 처리
+    for SITE_PKG in ${VENV_DIR}/lib/python*/site-packages; do
+        if [ -d "${SITE_PKG}/app" ]; then
+            log_info "Found app in ${SITE_PKG}"
+            cp -r "${SITE_PKG}/app" "${BACKEND_DIR}/"
+            chown -R "${APP_USER}:${APP_GROUP}" "${BACKEND_DIR}/app"
+            log_info "App directory copied to ${BACKEND_DIR}/app"
+            break
+        else
+            log_warn "App directory not found in ${SITE_PKG}"
+            exit 1
+        fi
+    done
+        
     log_info "Backend installed"
 }
 
@@ -304,7 +317,6 @@ EOF
     
     chown "${APP_USER}:${APP_GROUP}" "${BACKEND_DIR}/.env"
     chmod 600 "${BACKEND_DIR}/.env"
-    
 }
 
 # ============================================
@@ -313,7 +325,7 @@ EOF
 create_backend_log_info() {
     log_info "Creating backend log info file..."
 
-    cat > "${BACKEND_DIR}/app/logging_config.ini" << EOF
+    cat > "${BACKEND_DIR}/logging_config.ini" << EOF
 [loggers]
 keys=root
 
@@ -341,13 +353,13 @@ args=('${LOG_DIR}/backend.log', 'midnight', 1, 365, 'utf-8')
 
 [formatter_generic]
 format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
-
 EOF
-
+    
+    chown "${APP_USER}:${APP_GROUP}" "${BACKEND_DIR}/logging_config.ini"
 }
 
 # ============================================
-# 10. Systemd 서비스 생성
+# 10. Systemd 서비스 생성 (wheel 패키지 사용)
 # ============================================
 create_systemd_service() {
     log_info "Creating systemd service..."
@@ -364,19 +376,18 @@ User=${APP_USER}
 Group=${APP_GROUP}
 WorkingDirectory=${BACKEND_DIR}
 
-# 환경 변수
+# 환경 변수 
 Environment="PATH=${VENV_DIR}/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="PYTHONPATH=${BACKEND_DIR}"
 EnvironmentFile=-${BACKEND_DIR}/.env
 
-# 실행 명령 (localhost only binding)
+# 실행 명령 
 ExecStart=${VENV_DIR}/bin/uvicorn app.main:app \\
     --host 127.0.0.1 \\
     --port 8000 \\
     --workers 1 \\
     --log-level info \\
     --access-log \\
-    --log-config ${BACKEND_DIR}/app/logging_config.ini
+    --log-config ${BACKEND_DIR}/logging_config.ini
 
 # 재시작 정책
 Restart=always
@@ -409,7 +420,6 @@ ReadWritePaths=${LOG_DIR} ${RUN_DIR} ${BACKEND_DIR} /var/log/tinyproxy
 
 [Install]
 WantedBy=multi-user.target
-
 EOF
     
     systemctl daemon-reload
@@ -670,7 +680,7 @@ start_services() {
     log_info "Starting services..."
     
     # Backend 서비스 시작
-    systemctl start "${APP_NAME}.service"
+    systemctl restart "${APP_NAME}.service"
     sleep 3
     
     if systemctl is-active --quiet "${APP_NAME}.service"; then
@@ -818,7 +828,7 @@ main() {
     create_user_and_directories
     install_backend
     install_frontend
-    generate_ssl_certificate  # SSL 인증서 자동 생성
+    generate_ssl_certificate
     create_configuration
     create_backend_log_info
     create_systemd_service

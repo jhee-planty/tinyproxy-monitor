@@ -131,7 +131,7 @@ tinyproxy-monitor = "app.main:run_server"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*"]
+include = ["app", "app.*"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]
@@ -197,7 +197,7 @@ EOF
     
     # 최신 방법으로 wheel 빌드 (python -m build)
     log_info "Building wheel using 'python -m build'..."
-    python -m build --wheel --outdir dist/
+    python -m build --wheel --outdir dist/ 2>&1
     
     # wheel 파일 복사
     cp dist/*.whl "${OUTPUT_DIR}/"
