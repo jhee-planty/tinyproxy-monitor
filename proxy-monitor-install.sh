@@ -56,12 +56,6 @@ check_prerequisites() {
         exit 1
     fi
     
-    # Nginx 확인
-    if ! command -v nginx &> /dev/null; then
-        log_warn "Nginx is not installed. Installing from RPM packages if available..."
-        INSTALL_NGINX=true
-    fi
-    
     log_info "Prerequisites check completed"
 }
 
@@ -90,30 +84,36 @@ extract_package() {
 # ============================================
 # 3. Nginx 설치 (필요시)
 # ============================================
-install_nginx_if_needed() {
-    if [ "${INSTALL_NGINX}" = "true" ]; then
-        log_info "Installing Nginx from RPM packages..."
+install_rpms_if_needed() {  # 함수명 변경
+    log_info "Installing required RPM packages..."
+    
+    if [ -d "${EXTRACT_DIR}/rpms" ]; then
+        cd "${EXTRACT_DIR}/rpms"
         
-        if [ -d "${EXTRACT_DIR}/rpms" ]; then
-            cd "${EXTRACT_DIR}/rpms"
-            
-            # 의존성 순서대로 설치
-            for rpm in pcre2-*.rpm openssl-libs-*.rpm nginx-filesystem-*.rpm nginx-*.rpm; do
-                if ls $rpm 1> /dev/null 2>&1; then
-                    rpm -ivh $rpm --nodeps 2>/dev/null || true
-                fi
-            done
-            
-            if command -v nginx &> /dev/null; then
-                log_info "Nginx installed successfully"
-            else
-                log_error "Failed to install Nginx"
-                exit 1
+        # 모든 RPM 설치 시도
+        for rpm in *.rpm; do
+            if [ -f "$rpm" ]; then
+                log_info "Installing $rpm..."
+                rpm -ivh "$rpm" --nodeps 2>/dev/null || true
             fi
+        done
+        
+        # 필수 패키지 확인
+        if command -v nginx &> /dev/null; then
+            log_info "Nginx is available"
         else
-            log_error "RPM packages not found in package"
+            log_error "Nginx installation failed"
             exit 1
         fi
+        
+        if command -v python3.11 &> /dev/null || python3 --version | grep -E "3\.(9|1[0-9])" > /dev/null; then
+            log_info "Python 3.9+ is available"
+        else
+            log_warn "Python 3.11 RPM installation may have failed, using system Python"
+        fi
+    else
+        log_error "RPM packages directory not found"
+        exit 1
     fi
 }
 
@@ -703,7 +703,7 @@ main() {
     # 설치 단계 실행
     check_prerequisites
     extract_package
-    install_nginx_if_needed
+    install_rpms_if_needed
     create_user_and_directories
     install_backend
     install_frontend
