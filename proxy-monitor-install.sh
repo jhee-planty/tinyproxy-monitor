@@ -442,7 +442,7 @@ upstream tinyproxy_monitor_backend {
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name "";
+    server_name _;
     
     # 모든 HTTP 요청을 HTTPS로 강제 리다이렉트
     return 301 https://$host$request_uri;
@@ -452,7 +452,7 @@ server {
 server {
     listen 443 ssl http2 default_server;
     listen [::]:443 ssl http2 default_server;
-    server_name "";
+    server_name _;
     
     # SSL 인증서 경로
     ssl_certificate /etc/tinyproxy-monitor/ssl/server.crt;
@@ -483,32 +483,35 @@ server {
     root /usr/share/nginx/html/tinyproxy-monitor;
     index index.html;
     
-    # 정적 자산 캐싱
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 30d;
-        add_header Cache-Control "public, immutable";
+    # 헬스체크 엔드포인트 (먼저 정의)
+    location = /health {
+        proxy_pass http://tinyproxy_monitor_backend/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Connection "";
+        access_log off;
     }
     
-    # Frontend (SPA 라우팅)
-    location / {
-        try_files $uri $uri/ /index.html;
-        
-        # SPA를 위한 캐시 제어
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-        add_header Pragma "no-cache";
-        add_header Expires "0";
+    location = /api/health {
+        proxy_pass http://tinyproxy_monitor_backend/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Connection "";
+        access_log off;
     }
     
     # Backend API reverse proxy
-    location /api {
-        proxy_pass http://tinyproxy_monitor_backend;
+    location /api/ {
+        proxy_pass http://tinyproxy_monitor_backend/;
         proxy_http_version 1.1;
         
         # 헤더 설정
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port 443;
         
         # 연결 유지
         proxy_set_header Connection "";
@@ -521,11 +524,14 @@ server {
         # 버퍼 설정
         proxy_buffering off;
         proxy_request_buffering off;
+        
+        # 리다이렉트 처리
+        proxy_redirect http://127.0.0.1:8000/ https://$host/;
     }
     
     # WebSocket reverse proxy
     location /ws {
-        proxy_pass http://tinyproxy_monitor_backend;
+        proxy_pass http://tinyproxy_monitor_backend/ws;
         proxy_http_version 1.1;
         
         # WebSocket 업그레이드
@@ -533,10 +539,10 @@ server {
         proxy_set_header Connection "upgrade";
         
         # 헤더 설정
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
         
         # 타임아웃 설정 (WebSocket용으로 길게)
         proxy_connect_timeout 7d;
@@ -544,12 +550,20 @@ server {
         proxy_read_timeout 7d;
     }
     
-    # 헬스체크 엔드포인트
-    location /health {
-        proxy_pass http://tinyproxy_monitor_backend/health;
-        proxy_http_version 1.1;
-        proxy_set_header Connection "";
-        access_log off;
+    # 정적 자산 캐싱
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Frontend (SPA 라우팅) - 가장 마지막에 정의
+    location / {
+        try_files $uri $uri/ /index.html;
+        
+        # SPA를 위한 캐시 제어
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
     }
     
     # 로그 설정
