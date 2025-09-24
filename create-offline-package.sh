@@ -339,18 +339,21 @@ create_ssl_cert_script() {
     
     cat > "${OUTPUT_DIR}/generate-ssl-cert.sh" << 'EOF'
 #!/bin/bash
-# SSL 인증서 생성 스크립트 (HTTPS 전용 설정)
+# SSL 인증서 자동 생성 스크립트 (HTTPS 전용 설정)
 
 SSL_DIR="/etc/tinyproxy-monitor/ssl"
 CERT_DAYS=3650  # 10년
+KEY_SIZE=2048   # RSA 2048 고정
 
 # 색상 정의
 GREEN='\033[0;32m'
 RED='\033[0;31m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 
 # Root 권한 확인
 if [ "$EUID" -ne 0 ]; then
@@ -363,21 +366,32 @@ log_info "Creating SSL directory..."
 mkdir -p "$SSL_DIR"
 chmod 755 "$SSL_DIR"
 
-# 서버 정보 수집
-read -p "Enter your domain name (or IP address) [localhost]: " DOMAIN
-DOMAIN=${DOMAIN:-localhost}
+# 서버 정보 자동 설정
+DOMAIN="localhost"
+ORG="Tinyproxy Monitor"
+COUNTRY="KR"
 
-read -p "Enter your organization name [Tinyproxy Monitor]: " ORG
-ORG=${ORG:-Tinyproxy Monitor}
+# 모든 서버 IP 자동 감지
+SERVER_IPS=$(hostname -I)
+if [ -z "$SERVER_IPS" ]; then
+    SERVER_IPS="127.0.0.1"
+fi
 
-read -p "Enter your country code [KR]: " COUNTRY
-COUNTRY=${COUNTRY:-KR}
+# 서버 호스트명 감지
+SERVER_HOSTNAME=$(hostname -f 2>/dev/null || hostname)
+
+log_info "Generating SSL certificate for:"
+log_info "  Domain: $DOMAIN"
+log_info "  Hostname: $SERVER_HOSTNAME"
+log_info "  Server IPs: $SERVER_IPS"
+log_info "  Organization: $ORG"
+log_info "  Key Size: RSA $KEY_SIZE"
 
 # OpenSSL 설정 파일 생성
 log_info "Creating OpenSSL configuration..."
 cat > "$SSL_DIR/openssl.cnf" << EOC
 [req]
-default_bits = 2048
+default_bits = $KEY_SIZE
 prompt = no
 default_md = sha256
 distinguished_name = dn
@@ -398,51 +412,73 @@ subjectAltName = @alt_names
 DNS.1 = $DOMAIN
 DNS.2 = *.$DOMAIN
 DNS.3 = localhost
+DNS.4 = *.localhost
+DNS.5 = $SERVER_HOSTNAME
 IP.1 = 127.0.0.1
 IP.2 = ::1
 EOC
 
-# 현재 서버 IP 추가
-SERVER_IP=$(hostname -I | awk '{print $1}')
-if [ -n "$SERVER_IP" ]; then
-    echo "IP.3 = $SERVER_IP" >> "$SSL_DIR/openssl.cnf"
+# 모든 서버 IP 주소 추가
+IP_INDEX=3
+for IP in $SERVER_IPS; do
+    echo "IP.$IP_INDEX = $IP" >> "$SSL_DIR/openssl.cnf"
+    IP_INDEX=$((IP_INDEX + 1))
+done
+
+# 일반적인 내부망 IP 패턴도 추가 (선택적)
+# Docker 브리지, Kubernetes 클러스터 IP 등을 위해
+if ip addr show | grep -q "172.17"; then
+    echo "IP.$IP_INDEX = 172.17.0.1" >> "$SSL_DIR/openssl.cnf"
+    IP_INDEX=$((IP_INDEX + 1))
+fi
+if ip addr show | grep -q "10.0"; then
+    echo "IP.$IP_INDEX = 10.0.0.1" >> "$SSL_DIR/openssl.cnf"
+    IP_INDEX=$((IP_INDEX + 1))
 fi
 
-# 개인키 생성
-log_info "Generating private key..."
-openssl genrsa -out "$SSL_DIR/server.key" 2048
+# 개인키 생성 (RSA 2048)
+log_info "Generating RSA $KEY_SIZE private key..."
+openssl genrsa -out "$SSL_DIR/server.key" $KEY_SIZE 2>/dev/null
 
-# CSR 생성
+# CSR 생성 (자동)
 log_info "Generating certificate signing request..."
 openssl req -new -key "$SSL_DIR/server.key" \
     -out "$SSL_DIR/server.csr" \
-    -config "$SSL_DIR/openssl.cnf"
+    -config "$SSL_DIR/openssl.cnf" 2>/dev/null
 
 # 자체 서명 인증서 생성
-log_info "Generating self-signed certificate..."
+log_info "Generating self-signed certificate (valid for $CERT_DAYS days)..."
 openssl x509 -req -in "$SSL_DIR/server.csr" \
     -signkey "$SSL_DIR/server.key" \
     -out "$SSL_DIR/server.crt" \
     -days $CERT_DAYS \
     -extensions v3_req \
-    -extfile "$SSL_DIR/openssl.cnf"
+    -extfile "$SSL_DIR/openssl.cnf" 2>/dev/null
 
 # PEM 파일 생성 (일부 애플리케이션용)
 cat "$SSL_DIR/server.crt" "$SSL_DIR/server.key" > "$SSL_DIR/server.pem"
 
-# Diffie-Hellman 파라미터 생성 (보안 강화)
+# Diffie-Hellman 파라미터 생성 (보안 강화) - 백그라운드에서 생성
 log_info "Generating Diffie-Hellman parameters (this may take a while)..."
-openssl dhparam -out "$SSL_DIR/dhparam.pem" 2048
+openssl dhparam -out "$SSL_DIR/dhparam.pem" 2048 2>/dev/null &
+DH_PID=$!
 
+# DH 생성 중 다른 작업 수행
 # 권한 설정
 chmod 600 "$SSL_DIR/server.key"
 chmod 644 "$SSL_DIR/server.crt"
 chmod 644 "$SSL_DIR/server.pem"
+
+# DH 생성 완료 대기
+wait $DH_PID
 chmod 644 "$SSL_DIR/dhparam.pem"
 
 # 인증서 정보 확인
 log_info "Certificate information:"
-openssl x509 -in "$SSL_DIR/server.crt" -text -noout | grep -E "(Subject:|DNS:|IP:)"
+log_info "Subject:"
+openssl x509 -in "$SSL_DIR/server.crt" -text -noout 2>/dev/null | grep "Subject:" | head -1
+log_info "Alternative Names:"
+openssl x509 -in "$SSL_DIR/server.crt" -text -noout 2>/dev/null | grep -A 20 "Subject Alternative Name" | grep -E "(DNS:|IP:)"
 
 log_info "========================================="
 log_info "SSL certificate generated successfully!"
@@ -453,12 +489,18 @@ log_info "  Certificate: $SSL_DIR/server.crt"
 log_info "  PEM Bundle: $SSL_DIR/server.pem"
 log_info "  DH Params: $SSL_DIR/dhparam.pem"
 log_info "========================================="
-log_info "IMPORTANT: HTTPS is mandatory for this application."
-log_info "HTTP access will automatically redirect to HTTPS."
+log_info "Certificate includes:"
+log_info "  - All server IP addresses"
+log_info "  - Server hostname: $SERVER_HOSTNAME"
+log_info "  - localhost and *.localhost"
+log_info "  - IPv4 and IPv6 loopback addresses"
 log_info "========================================="
-log_info "Note: This is a self-signed certificate."
-log_info "Users will see a security warning in browsers."
-log_info "========================================="
+log_warn "Note: This is a self-signed certificate."
+log_warn "Users will see a security warning in browsers."
+log_info "=========================================="
+
+# 성공 코드 반환
+exit 0"
 EOF
     
     chmod +x "${OUTPUT_DIR}/generate-ssl-cert.sh"

@@ -219,7 +219,40 @@ install_frontend() {
 }
 
 # ============================================
-# 7. 환경 설정 파일 생성
+# 7. SSL 인증서 자동 생성
+# ============================================
+generate_ssl_certificate() {
+    log_info "Generating SSL certificate for HTTPS..."
+    
+    # generate-ssl-cert.sh 스크립트 확인
+    if [ -f "${EXTRACT_DIR}/generate-ssl-cert.sh" ]; then
+        # 스크립트 실행 권한 부여
+        chmod +x "${EXTRACT_DIR}/generate-ssl-cert.sh"
+        
+        # SSL 인증서 자동 생성
+        if "${EXTRACT_DIR}/generate-ssl-cert.sh"; then
+            log_info "SSL certificate generated successfully"
+        else
+            log_error "SSL certificate generation failed"
+            exit 1
+        fi
+    else
+        log_error "SSL certificate generation script not found"
+        exit 1
+    fi
+    
+    # 인증서 파일 확인
+    SSL_DIR="/etc/tinyproxy-monitor/ssl"
+    if [ -f "${SSL_DIR}/server.crt" ] && [ -f "${SSL_DIR}/server.key" ]; then
+        log_info "SSL certificates verified at ${SSL_DIR}"
+    else
+        log_error "SSL certificates not found at ${SSL_DIR}"
+        exit 1
+    fi
+}
+
+# ============================================
+# 8. 환경 설정 파일 생성
 # ============================================
 create_configuration() {
     log_info "Creating configuration files..."
@@ -275,7 +308,7 @@ EOF
 }
 
 # ============================================
-# 8. backend 로그 설정 파일 생성
+# 9. backend 로그 설정 파일 생성
 # ============================================
 create_backend_log_info() {
     log_info "Creating backend log info file..."
@@ -314,7 +347,7 @@ EOF
 }
 
 # ============================================
-# 9. Systemd 서비스 생성
+# 10. Systemd 서비스 생성
 # ============================================
 create_systemd_service() {
     log_info "Creating systemd service..."
@@ -386,45 +419,84 @@ EOF
 }
 
 # ============================================
-# 10. Nginx 설정
+# 11. Nginx 설정 (HTTPS 전용)
 # ============================================
 configure_nginx() {
-    log_info "Configuring Nginx..."
+    log_info "Configuring Nginx for HTTPS..."
     
     # 기존 default 설정 백업
     if [ -f /etc/nginx/conf.d/default.conf ]; then
         mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
     fi
     
-    # Tinyproxy Monitor Nginx 설정
+    # Tinyproxy Monitor Nginx 설정 (HTTPS 전용)
     cat > "/etc/nginx/conf.d/${APP_NAME}.conf" << 'EOF'
-# Tinyproxy Monitor Nginx Configuration
+# Tinyproxy Monitor Nginx Configuration (HTTPS-Only)
 
 upstream tinyproxy_monitor_backend {
     server 127.0.0.1:8000;
     keepalive 32;
 }
 
+# HTTP 서버 (80 포트) - HTTPS로 강제 리다이렉트
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    
-    # server_name 지시자를 생략하거나 빈 문자열 사용
-    # 이렇게 하면 모든 요청을 받지만 충돌 경고는 없음
     server_name "";
     
-    # Frontend 루트 디렉토리
-    root /usr/share/nginx/html/tinyproxy-monitor;
-    index index.html;
+    # 모든 HTTP 요청을 HTTPS로 강제 리다이렉트
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS 서버 (443 포트)
+server {
+    listen 443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
+    server_name "";
+    
+    # SSL 인증서 경로
+    ssl_certificate /etc/tinyproxy-monitor/ssl/server.crt;
+    ssl_certificate_key /etc/tinyproxy-monitor/ssl/server.key;
+    
+    # SSL 설정 (보안 강화)
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    
+    # DH 파라미터 (있는 경우)
+    ssl_dhparam /etc/tinyproxy-monitor/ssl/dhparam.pem;
+    
+    # 프로토콜 및 암호화 스위트
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    
+    # HSTS (HTTPS 전용 사용 강제)
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     
     # 보안 헤더
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     
+    # Frontend 루트 디렉토리
+    root /usr/share/nginx/html/tinyproxy-monitor;
+    index index.html;
+    
+    # 정적 자산 캐싱
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+    
     # Frontend (SPA 라우팅)
     location / {
         try_files $uri $uri/ /index.html;
+        
+        # SPA를 위한 캐시 제어
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
     }
     
     # Backend API reverse proxy
@@ -480,12 +552,6 @@ server {
         access_log off;
     }
     
-    # 정적 자산 캐싱
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-    
     # 로그 설정
     access_log /var/log/nginx/tinyproxy-monitor-access.log;
     error_log /var/log/nginx/tinyproxy-monitor-error.log;
@@ -499,11 +565,11 @@ EOF
     systemctl enable nginx
     systemctl restart nginx
     
-    log_info "Nginx configured and restarted"
+    log_info "Nginx configured for HTTPS and restarted"
 }
 
 # ============================================
-# 11. SELinux 설정 (RHEL/Rocky Linux)
+# 12. SELinux 설정 (RHEL/Rocky Linux)
 # ============================================
 configure_selinux() {
     if command -v getenforce &> /dev/null && [ "$(getenforce)" != "Disabled" ]; then
@@ -525,7 +591,7 @@ configure_selinux() {
 }
 
 # ============================================
-# 12. 로그 로테이션 설정
+# 13. 로그 로테이션 설정
 # ============================================
 configure_log_rotation() {
     log_info "Configuring log rotation..."
@@ -564,7 +630,7 @@ EOF
 }
 
 # ============================================
-# 13. Tinyproxy 로그 접근 권한 설정
+# 14. Tinyproxy 로그 접근 권한 설정
 # ============================================
 configure_tinyproxy_access() {
     log_info "Configuring Tinyproxy log access..."
@@ -584,7 +650,7 @@ configure_tinyproxy_access() {
 }
 
 # ============================================
-# 14. 서비스 시작
+# 15. 서비스 시작
 # ============================================
 start_services() {
     log_info "Starting services..."
@@ -612,7 +678,7 @@ start_services() {
 }
 
 # ============================================
-# 15. 설치 검증
+# 16. 설치 검증
 # ============================================
 verify_installation() {
     log_info "Verifying installation..."
@@ -626,18 +692,26 @@ verify_installation() {
         log_error "✗ Backend API is not responding"
     fi
     
-    # Frontend 접근 테스트 (Nginx)
-    if curl -fs http://localhost/ > /dev/null 2>&1; then
-        log_info "✓ Frontend is accessible via Nginx"
+    # HTTPS 접근 테스트 (자체 서명 인증서 무시)
+    if curl -kfs https://localhost/ > /dev/null 2>&1; then
+        log_info "✓ Frontend is accessible via HTTPS"
     else
-        log_error "✗ Frontend is not accessible"
+        log_error "✗ Frontend is not accessible via HTTPS"
     fi
     
-    # API reverse proxy 테스트
-    if curl -fs http://localhost/api/health > /dev/null 2>&1; then
-        log_info "✓ API reverse proxy is working"
+    # HTTP에서 HTTPS로 리다이렉트 테스트
+    REDIRECT_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
+    if [ "$REDIRECT_CODE" = "301" ]; then
+        log_info "✓ HTTP to HTTPS redirect is working"
     else
-        log_error "✗ API reverse proxy is not working"
+        log_warn "⚠ HTTP to HTTPS redirect may not be working (code: $REDIRECT_CODE)"
+    fi
+    
+    # API reverse proxy 테스트 (HTTPS)
+    if curl -kfs https://localhost/api/health > /dev/null 2>&1; then
+        log_info "✓ API reverse proxy is working over HTTPS"
+    else
+        log_error "✗ API reverse proxy is not working over HTTPS"
     fi
     
     # 외부 접근 차단 확인 (실제로는 연결되지 않아야 함)
@@ -649,10 +723,26 @@ verify_installation() {
 }
 
 # ============================================
-# 16. 설치 완료 메시지
+# 17. 설치 완료 메시지
 # ============================================
 print_completion_message() {
     local SERVER_IP=$(hostname -I | awk '{print $1}')
+    
+    # 관리자 정보 저장
+    cat > "${CONFIG_DIR}/admin.info" << EOF
+========================================
+Tinyproxy Monitor Admin Credentials
+========================================
+URL (HTTPS): https://${SERVER_IP}/
+Username: admin
+Password: ${ADMIN_PASSWORD}
+========================================
+SSL Certificate: Self-signed (RSA 2048)
+Certificate Location: /etc/tinyproxy-monitor/ssl/
+========================================
+EOF
+    
+    chmod 600 "${CONFIG_DIR}/admin.info"
     
     echo ""
     log_info "========================================="
@@ -664,8 +754,15 @@ print_completion_message() {
     log_info "  Frontend: systemctl status nginx"
     log_info ""
     log_info "Access Information:"
-    log_info "  URL: http://${SERVER_IP}/"
+    log_info "  URL: https://${SERVER_IP}/ (HTTPS Only)"
     log_info "  Credentials: cat ${CONFIG_DIR}/admin.info"
+    log_info ""
+    log_warn "Note: Using self-signed certificate."
+    log_warn "Browser will show security warning on first access."
+    log_info ""
+    log_info "SSL Certificate Location:"
+    log_info "  /etc/tinyproxy-monitor/ssl/server.crt"
+    log_info "  /etc/tinyproxy-monitor/ssl/server.key"
     log_info ""
     log_info "Log Files:"
     log_info "  Backend: journalctl -u ${APP_NAME} -f"
@@ -684,7 +781,7 @@ print_completion_message() {
 }
 
 # ============================================
-# 17. 정리 작업
+# 18. 정리 작업
 # ============================================
 cleanup() {
     log_info "Cleaning up temporary files..."
@@ -707,6 +804,7 @@ main() {
     create_user_and_directories
     install_backend
     install_frontend
+    generate_ssl_certificate  # SSL 인증서 자동 생성
     create_configuration
     create_backend_log_info
     create_systemd_service
