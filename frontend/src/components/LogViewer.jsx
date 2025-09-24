@@ -11,16 +11,20 @@ const LogViewer = ({ logs, autoScroll = true }) => {
   }
   
   // 타임스탬프 포맷팅
-  const formatTimestamp = (timestamp) => {
-    if (!timestamp) return ''
-    const date = new Date(timestamp)
-    return date.toLocaleTimeString('en-US', { 
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
+// ...existing code...
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  // 년-월-일 시:분:초 포맷
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  const second = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+}
+// ...existing code...
   
   // 자동 스크롤
   React.useEffect(() => {

@@ -155,7 +155,7 @@ function ProxyMetricsChart({ title = "Proxy Metrics" }) {
 
           {/* 처리량 차트 */}
           <div className="chart-item">
-            <h4>Throughput (Requests/sec)</h4>
+            <h4> Requests/sec </h4>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />

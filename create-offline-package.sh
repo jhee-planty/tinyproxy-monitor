@@ -332,7 +332,141 @@ EOF
 }
 
 # ============================================
-# 6. 설치 가이드 생성
+# 6. SSL 인증서 생성 스크립트 추가
+# ============================================
+create_ssl_cert_script() {
+    log_info "Creating SSL certificate generation script..."
+    
+    cat > "${OUTPUT_DIR}/generate-ssl-cert.sh" << 'EOF'
+#!/bin/bash
+# SSL 인증서 생성 스크립트 (HTTPS 전용 설정)
+
+SSL_DIR="/etc/tinyproxy-monitor/ssl"
+CERT_DAYS=3650  # 10년
+
+# 색상 정의
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Root 권한 확인
+if [ "$EUID" -ne 0 ]; then
+    log_error "Please run as root"
+    exit 1
+fi
+
+# SSL 디렉토리 생성
+log_info "Creating SSL directory..."
+mkdir -p "$SSL_DIR"
+chmod 755 "$SSL_DIR"
+
+# 서버 정보 수집
+read -p "Enter your domain name (or IP address) [localhost]: " DOMAIN
+DOMAIN=${DOMAIN:-localhost}
+
+read -p "Enter your organization name [Tinyproxy Monitor]: " ORG
+ORG=${ORG:-Tinyproxy Monitor}
+
+read -p "Enter your country code [KR]: " COUNTRY
+COUNTRY=${COUNTRY:-KR}
+
+# OpenSSL 설정 파일 생성
+log_info "Creating OpenSSL configuration..."
+cat > "$SSL_DIR/openssl.cnf" << EOC
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+req_extensions = v3_req
+
+[dn]
+C=$COUNTRY
+ST=Seoul
+L=Seoul
+O=$ORG
+OU=IT Department
+CN=$DOMAIN
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = $DOMAIN
+DNS.2 = *.$DOMAIN
+DNS.3 = localhost
+IP.1 = 127.0.0.1
+IP.2 = ::1
+EOC
+
+# 현재 서버 IP 추가
+SERVER_IP=$(hostname -I | awk '{print $1}')
+if [ -n "$SERVER_IP" ]; then
+    echo "IP.3 = $SERVER_IP" >> "$SSL_DIR/openssl.cnf"
+fi
+
+# 개인키 생성
+log_info "Generating private key..."
+openssl genrsa -out "$SSL_DIR/server.key" 2048
+
+# CSR 생성
+log_info "Generating certificate signing request..."
+openssl req -new -key "$SSL_DIR/server.key" \
+    -out "$SSL_DIR/server.csr" \
+    -config "$SSL_DIR/openssl.cnf"
+
+# 자체 서명 인증서 생성
+log_info "Generating self-signed certificate..."
+openssl x509 -req -in "$SSL_DIR/server.csr" \
+    -signkey "$SSL_DIR/server.key" \
+    -out "$SSL_DIR/server.crt" \
+    -days $CERT_DAYS \
+    -extensions v3_req \
+    -extfile "$SSL_DIR/openssl.cnf"
+
+# PEM 파일 생성 (일부 애플리케이션용)
+cat "$SSL_DIR/server.crt" "$SSL_DIR/server.key" > "$SSL_DIR/server.pem"
+
+# Diffie-Hellman 파라미터 생성 (보안 강화)
+log_info "Generating Diffie-Hellman parameters (this may take a while)..."
+openssl dhparam -out "$SSL_DIR/dhparam.pem" 2048
+
+# 권한 설정
+chmod 600 "$SSL_DIR/server.key"
+chmod 644 "$SSL_DIR/server.crt"
+chmod 644 "$SSL_DIR/server.pem"
+chmod 644 "$SSL_DIR/dhparam.pem"
+
+# 인증서 정보 확인
+log_info "Certificate information:"
+openssl x509 -in "$SSL_DIR/server.crt" -text -noout | grep -E "(Subject:|DNS:|IP:)"
+
+log_info "========================================="
+log_info "SSL certificate generated successfully!"
+log_info "========================================="
+log_info "Certificate location:"
+log_info "  Private Key: $SSL_DIR/server.key"
+log_info "  Certificate: $SSL_DIR/server.crt"
+log_info "  PEM Bundle: $SSL_DIR/server.pem"
+log_info "  DH Params: $SSL_DIR/dhparam.pem"
+log_info "========================================="
+log_info "IMPORTANT: HTTPS is mandatory for this application."
+log_info "HTTP access will automatically redirect to HTTPS."
+log_info "========================================="
+log_info "Note: This is a self-signed certificate."
+log_info "Users will see a security warning in browsers."
+log_info "========================================="
+EOF
+    
+    chmod +x "${OUTPUT_DIR}/generate-ssl-cert.sh"
+    log_info "SSL certificate generation script created: generate-ssl-cert.sh"
+}
+
+# ============================================
+# 7. 설치 가이드 생성 (HTTPS 포함)
 # ============================================
 create_install_guide() {
     log_info "Creating installation guide..."
@@ -412,25 +546,87 @@ rpm -ivh *.rpm
 yum localinstall *.rpm --disablerepo=* -y
 
 
+## SSL 인증서 생성 (필수 - HTTPS 전용)
+
+```bash
+# SSL 인증서 생성 스크립트 실행 (필수)
+./generate-ssl-cert.sh
+
+# 또는 기존 인증서가 있는 경우
+mkdir -p /etc/tinyproxy-monitor/ssl
+cp your-cert.crt /etc/tinyproxy-monitor/ssl/server.crt
+cp your-cert.key /etc/tinyproxy-monitor/ssl/server.key
+chmod 600 /etc/tinyproxy-monitor/ssl/server.key
+chmod 644 /etc/tinyproxy-monitor/ssl/server.crt
+```
+
 ## Frontend 설치
 
-### Nginx 사용 시
+### Nginx 사용 시 (HTTPS 전용)
 ```bash
 # Frontend 파일 압축 해제
 mkdir -p /usr/share/nginx/html/tinyproxy-monitor
 tar xzf frontend-dist.tar.gz -C /usr/share/nginx/html/tinyproxy-monitor/
 
-# Nginx 설정 추가
+# Nginx 설정 추가 (HTTPS 전용)
 cat > /etc/nginx/conf.d/tinyproxy-monitor.conf << 'END'
+# HTTP 서버 (80 포트) - HTTPS로 강제 리다이렉트
 server {
     listen 80;
+    listen [::]:80;
     server_name _;
     
+    # 모든 HTTP 요청을 HTTPS로 강제 리다이렉트
+    return 301 https://$host$request_uri;
+
+# HTTPS 서버 (443 포트)
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name _;
+    
+    # SSL 인증서 경로
+    ssl_certificate /etc/tinyproxy-monitor/ssl/server.crt;
+    ssl_certificate_key /etc/tinyproxy-monitor/ssl/server.key;
+    
+    # SSL 설정 (보안 강화)
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    
+    # DH 파라미터 (있는 경우)
+    # ssl_dhparam /etc/tinyproxy-monitor/ssl/dhparam.pem;
+    
+    # 프로토콜 및 암호화 스위트
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    
+    # HSTS (HTTPS 전용 사용 강제)
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+    
+    # 기타 보안 헤더
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # 웹 루트
     root /usr/share/nginx/html/tinyproxy-monitor;
     index index.html;
     
+    # 정적 파일 캐싱
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+    
     location / {
         try_files $uri $uri/ /index.html;
+        
+        # SPA를 위한 보안 헤더
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
     }
     
     location /api {
@@ -438,6 +634,13 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # 프록시 타임아웃
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
     
     location /ws {
@@ -445,29 +648,35 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket 타임아웃
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
     }
 }
 END
+
+# Nginx 설정 테스트
+nginx -t
 
 # Nginx 재시작
 systemctl restart nginx
 ```
 
-### 또는 Backend에서 직접 서빙
-Backend의 main.py에 다음 코드 추가:
-```python
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
+### Backend에서 직접 서빙 (권장하지 않음)
+**보안상 HTTPS 전용 설정을 위해 Nginx 사용을 권장합니다.**
 
-# Frontend 정적 파일 서빙
-frontend_path = Path("/opt/tinyproxy-monitor/frontend")
-if frontend_path.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="static")
-```
+Backend 직접 서빙 시 HTTPS 설정이 복잡하므로, 프로덕션 환경에서는 Nginx를 통한 HTTPS 프록시 구성을 사용하세요.
 
 ## 테스트
-- Backend API: http://localhost:8000/health
-- Frontend: http://localhost/ (Nginx) 또는 http://localhost:8000/ (Backend 서빙)
+- Backend API: http://localhost:8000/health (내부 통신용)
+- Frontend: https://localhost/ 또는 https://서버IP/ (HTTPS 전용)
+- HTTP 리다이렉트 테스트: http://서버IP/ → https://서버IP/로 자동 이동
+- WebSocket 테스트: 브라우저 콘솔에서 확인 (wss:// 프로토콜 사용)
 
 ## 문제 해결
 
@@ -489,9 +698,62 @@ restorecon -Rv /usr/share/nginx/html/tinyproxy-monitor
 
 ### 방화벽
 ```bash
-firewall-cmd --permanent --add-port=8000/tcp
-firewall-cmd --permanent --add-service=http
+# HTTPS 서비스만 추가 (HTTP는 리다이렉트용으로만 사용)
+firewall-cmd --permanent --add-service=https
+firewall-cmd --permanent --add-service=http  # 리다이렉트를 위해 필요
 firewall-cmd --reload
+
+# 또는 포트로 직접 추가
+firewall-cmd --permanent --add-port=80/tcp   # 리다이렉트용
+firewall-cmd --permanent --add-port=443/tcp  # HTTPS 서비스용
+firewall-cmd --reload
+
+# Backend API 포트는 외부 접근 차단 (localhost만 허용)
+# firewall-cmd --permanent --remove-port=8000/tcp  # 외부 접근 차단
+# firewall-cmd --reload
+```
+
+### SSL 인증서 갱신 (자체 서명 인증서)
+```bash
+# 인증서 만료 확인
+openssl x509 -in /etc/tinyproxy-monitor/ssl/server.crt -noout -dates
+
+# 인증서 재생성
+./generate-ssl-cert.sh
+systemctl reload nginx
+```
+
+### 브라우저 인증서 경고 해결
+자체 서명 인증서를 사용하면 브라우저에서 경고가 표시됩니다.
+
+#### Chrome/Edge
+1. 경고 화면에서 "고급" 클릭
+2. "안전하지 않음으로 이동" 클릭
+
+#### Firefox
+1. "고급" 클릭
+2. "위험을 감수하고 계속" 클릭
+
+#### 영구적 해결 (권장)
+```bash
+# 인증서를 클라이언트 시스템에 신뢰할 수 있는 인증서로 추가
+# Linux:
+sudo cp /etc/tinyproxy-monitor/ssl/server.crt /usr/local/share/ca-certificates/
+sudo update-ca-certificates
+
+# Windows: 
+# server.crt 파일을 다운로드하여 "신뢰할 수 있는 루트 인증 기관"에 설치
+```
+
+### HTTPS 강제 적용 확인
+```bash
+# HTTP 접근 시 HTTPS로 리다이렉트되는지 확인
+curl -I http://서버IP/
+# 응답: HTTP/1.1 301 Moved Permanently
+# Location: https://서버IP/
+
+# HTTPS 직접 접근
+curl -k https://서버IP/health
 ```
 EOF
     
@@ -499,19 +761,22 @@ EOF
 }
 
 # ============================================
-# 7. 설치 스크립트 복사
+# 8. 설치 스크립트 복사
 # ============================================
 copy_install_script() {
     log_info "Copying installation script..."
     
-    cp "${PROJECT_DIR}/proxy-monitor-install.sh" "${BUILD_DIR}/"
-    chmod +x "${BUILD_DIR}/proxy-monitor-install.sh"
-    
-    log_info "Installation script copied: proxy-monitor-install.sh"
+    if [ -f "${PROJECT_DIR}/proxy-monitor-install.sh" ]; then
+        cp "${PROJECT_DIR}/proxy-monitor-install.sh" "${BUILD_DIR}/"
+        chmod +x "${BUILD_DIR}/proxy-monitor-install.sh"
+        log_info "Installation script copied: proxy-monitor-install.sh"
+    else
+        log_warn "Installation script not found: proxy-monitor-install.sh"
+    fi
 }
 
 # ============================================
-# 8. 최종 패키지 생성
+# 9. 최종 패키지 생성
 # ============================================
 create_final_package() {
     log_info "Creating final package..."
@@ -543,6 +808,7 @@ main() {
     download_python_deps
     include_rpm_dependencies
     build_frontend
+    create_ssl_cert_script
     create_install_guide
     copy_install_script
     create_final_package
@@ -555,6 +821,12 @@ main() {
     ls -lh "${OUTPUT_DIR}/"
     log_info ""
     log_info "Final package: ${BUILD_DIR}/tinyproxy-monitor-offline-${VERSION}.tar.gz"
+    log_info ""
+    log_info "Package includes:"
+    log_info "  - SSL certificate generation script (mandatory)"
+    log_info "  - HTTPS-only configuration for Nginx"
+    log_info "  - Automatic HTTP to HTTPS redirection"
+    log_info "  - Enhanced security headers (HSTS enabled)"
     log_info ""
     log_info "This package uses modern Python packaging standards:"
     log_info "  - PEP 639 compliant (SPDX license expression)"

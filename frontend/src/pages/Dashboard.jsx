@@ -235,12 +235,6 @@ const Dashboard = () => {
                   <span className="stat-label">Disk</span>
                   <span className="stat-value">{systemMetrics.disk?.percent?.toFixed(1)}%</span>
                 </div>
-                {performanceMetrics && (
-                  <div className="stat-box">
-                    <span className="stat-label">Throughput</span>
-                    <span className="stat-value">{performanceMetrics.throughput?.toFixed(1)} req/s</span>
-                  </div>
-                )}
               </div>
             )}
           </div>

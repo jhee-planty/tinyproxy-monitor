@@ -15,15 +15,6 @@ function PerformanceChart({ data, title }) {
           <Tooltip />
           <Legend />
           <Line 
-            yAxisId="left"
-            type="monotone" 
-            dataKey="throughput" 
-            stroke="#8884d8" 
-            strokeWidth={2}
-            dot={false}
-            name="Throughput (req/s)"
-          />
-          <Line 
             yAxisId="right"
             type="monotone" 
             dataKey="p95" 
