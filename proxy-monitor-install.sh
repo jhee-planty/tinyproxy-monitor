@@ -502,7 +502,7 @@ server {
     
     # Backend API reverse proxy
     location /api/ {
-        proxy_pass http://tinyproxy_monitor_backend/;
+        proxy_pass http://tinyproxy_monitor_backend/api/;
         proxy_http_version 1.1;
         
         # 헤더 설정
