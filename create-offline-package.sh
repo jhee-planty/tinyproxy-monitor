@@ -497,10 +497,10 @@ log_info "  - IPv4 and IPv6 loopback addresses"
 log_info "========================================="
 log_warn "Note: This is a self-signed certificate."
 log_warn "Users will see a security warning in browsers."
-log_info "=========================================="
+log_info "========================================="
 
 # 성공 코드 반환
-exit 0"
+exit 0
 EOF
     
     chmod +x "${OUTPUT_DIR}/generate-ssl-cert.sh"
