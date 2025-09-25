@@ -1,0 +1,304 @@
+/* HA Status Component - 기존 스타일 패턴 따르기 */
+
+/* 메인 카드 (StatusCard 스타일 따르기) */
+.ha-status-card {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ha-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.ha-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #495057;
+}
+
+/* 상태 배지 (StatusCard의 status-badge 스타일 따르기) */
+.ha-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ha-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 상태별 색상 (기존 패턴) */
+.state-master {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.state-master .ha-dot {
+  background-color: #28a745;
+}
+
+.state-backup {
+  background-color: #d1ecf1;
+  color: #004085;
+}
+
+.state-backup .ha-dot {
+  background-color: #17a2b8;
+}
+
+.state-fault {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.state-fault .ha-dot {
+  background-color: #dc3545;
+}
+
+.state-unknown {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.state-unknown .ha-dot {
+  background-color: #6c757d;
+}
+
+/* 상세 정보 (StatusCard의 status-details 스타일 따르기) */
+.ha-details {
+  margin-bottom: 12px;
+}
+
+.ha-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.9rem;
+}
+
+.ha-label {
+  font-weight: 600;
+  color: #6c757d;
+  min-width: 120px;
+}
+
+.ha-value {
+  color: #212529;
+  font-family: 'Courier New', monospace;
+}
+
+/* 컨트롤 (기존 패턴) */
+.ha-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.ha-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.ha-checkbox input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.ha-refresh-btn {
+  padding: 6px 16px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  color: #495057;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ha-refresh-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.ha-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 이벤트 목록 (StatusCard의 details 스타일 따르기) */
+.ha-events {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.ha-events summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6c757d;
+  padding: 4px 0;
+}
+
+.ha-event-list {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ha-event {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 0.813rem;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.ha-event:last-child {
+  border-bottom: none;
+}
+
+.ha-event-state {
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.ha-event-message {
+  color: #6c757d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Compact 모드 (StatsCard의 compact 스타일 따르기) */
+.ha-status-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ha-status-compact .ha-badge {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.ha-vip-badge {
+  padding: 2px 8px;
+  background: #ffc107;
+  color: #000;
+  border-radius: 12px;
+  font-size: 0.688rem;
+  font-weight: 600;
+}
+
+/* Header 배지 (기존 스타일 패턴) */
+.ha-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.badge-vip {
+  margin-left: 4px;
+  padding: 1px 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 0.625rem;
+}
+
+/* Header 배지 색상 */
+.badge-master {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+}
+
+.badge-master .badge-dot {
+  background: white;
+}
+
+.badge-backup {
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  color: white;
+}
+
+.badge-backup .badge-dot {
+  background: white;
+}
+
+.badge-fault {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+}
+
+.badge-fault .badge-dot {
+  background: white;
+}
+
+.badge-unknown {
+  background: linear-gradient(135deg, #6c757d, #545b62);
+  color: white;
+}
+
+.badge-unknown .badge-dot {
+  background: white;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .ha-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .ha-label {
+    min-width: auto;
+  }
+  
+  .ha-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .ha-refresh-btn {
+    width: 100%;
+  }
+}

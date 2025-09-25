@@ -3,6 +3,7 @@ import StatusCard from '../components/StatusCard'
 import StatsCard from '../components/StatsCard'
 import SystemMetricsChart from '../components/SystemMetricsChart'
 import ProxyMetricsChart from '../components/ProxyMetricsChart'
+import { HAStatusBadge } from '../components/HAStatus'
 import './Dashboard.css'
 
 const Dashboard = () => {
@@ -148,6 +149,7 @@ const Dashboard = () => {
               fontWeight: 'normal'
             }}>
               ({systemInfo.hostname})
+              <HAStatusBadge apiUrl="/api" />
             </span>
           )}
         </h2>
