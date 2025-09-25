@@ -34,10 +34,9 @@ const Logs = () => {
   // WebSocket URL 설정
   // 브라우저가 접속한 호스트를 사용하고, 백엔드 포트로 연결
   const getWebSocketURL = () => {
-    const wsProtocol = 'ws://'
-    const wsHost = "localhost"  // 브라우저가 접속한 호스트 사용
-    const wsPort = 8000  // 백엔드 포트
-    return `${wsProtocol}${wsHost}:${wsPort}`
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.hostname // 브라우저가 접속한 호스트 사용
+    return `${wsProtocol}${wsHost}`
   }
   const WS_URL = getWebSocketURL()
   const MAX_LOGS = 1000
@@ -173,7 +172,7 @@ const Logs = () => {
         wsRef.current.close()
       }
       
-      const wsUrl = `${WS_URL}/api/ws/logs`
+      const wsUrl = `${WS_URL}/ws/logs`
       console.log('Attempting WebSocket connection to:', wsUrl)
       const ws = new WebSocket(wsUrl)
       wsRef.current = ws

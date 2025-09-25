@@ -9,7 +9,7 @@ from app.core.log_stream import LogStreamManager
 from app.api.logs import parse_log_line
 from app.core.config import settings
 
-router = APIRouter(prefix="/api", tags=["websocket"])
+router = APIRouter(prefix="/ws", tags=["websocket"])
 
 # 로그 레벨 우선순위 (낮을수록 중요)
 LOG_LEVEL_PRIORITY = {
@@ -106,7 +106,7 @@ async def safe_send_json(websocket: WebSocket, data: dict) -> bool:
         print(f"Error sending WebSocket message: {e}")
         return False
 
-@router.websocket("/ws/logs")
+@router.websocket("/logs")
 async def websocket_endpoint(
     websocket: WebSocket,
     batch_size: int = Query(default=settings.WS_DEFAULT_BATCH_SIZE, ge=10, le=1000),
@@ -401,7 +401,7 @@ async def send_realtime_logs(
             print(f"Error in realtime log sending: {e}")
             break
 
-@router.get("/ws/status")
+@router.get("/status")
 async def get_websocket_status():
     """
     WebSocket 연결 상태 확인
