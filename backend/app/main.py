@@ -11,7 +11,7 @@ from pathlib import Path
 # Add the parent directory to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.api import logs, process, stats, websocket, system, performance, auth, ha_status
+from app.api import logs, process, stats, websocket, system, performance, auth
 from app.core.config import settings
 from app.core.auth import get_optional_user
 from app.core.system_metrics import system_collector
@@ -95,7 +95,6 @@ app.include_router(websocket.router)
 # Include routers - 새로운 라우터
 app.include_router(system.router)
 app.include_router(performance.router)
-app.include_router(ha_status.router)
 
 @app.get("/")
 async def root():
